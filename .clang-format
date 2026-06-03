@@ -1,0 +1,11 @@
+BasedOnStyle: Google
+Language: Cpp
+Standard: c++20
+ColumnLimit: 100
+DerivePointerAlignment: false
+PointerAlignment: Left
+AccessModifierOffset: -1
+SortIncludes: true
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
