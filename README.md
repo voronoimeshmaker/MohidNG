@@ -44,13 +44,24 @@ ctest --test-dir build/debug --output-on-failure
 ## Examples
 
 ```bash
-./build/debug/examples/Ex01_ReadMesh/Ex01_ReadMesh data/meshes/square_2x2.mngmesh
-./build/debug/examples/Ex02_CellField/Ex02_CellField data/meshes/square_2x2.mngmesh
-./build/debug/examples/Ex03_GradientReconstruction/Ex03_GradientReconstruction data/meshes/square_2x2.mngmesh
+./build/debug/exe_read_mesh data/meshes/square_2x2.mngmesh
+./build/debug/exe_cell_field data/meshes/square_2x2.mngmesh
+./build/debug/exe_gradient_reconstruction data/meshes/square_2x2.mngmesh
+
+# Or from build/debug:
+make run_read_mesh
+make run_cell_field
+make run_gradient_reconstruction
 ```
 
+## Adding examples and tests
+
+CMake discovers examples and tests automatically. Add new examples as `examples/.../exe_name.cc` and new tests as `tests/.../tst_name.cc`.
+
+From `build/debug`, `exe_case1.cc` can be built and run with `make run_case1`. Test files follow the same rule: `tst_gradient.cc` creates `make run_gradient`.
 ## Project contact
 
 Email: mohidng@hotmail
 
 GitHub organisation: https://github.com/mohidng
+

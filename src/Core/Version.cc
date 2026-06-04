@@ -1,4 +1,5 @@
 #include "MohidNG/Core/Version.h"
+#include "MohidNG/Core/Logger.h"
 
 namespace mohidng {
 

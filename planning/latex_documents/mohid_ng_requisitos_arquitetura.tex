@@ -1,0 +1,713 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper,margin=21mm,top=24mm,bottom=24mm]{geometry}
+\usepackage{fontspec}
+\usepackage{amsmath,amssymb}
+\usepackage{physics}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\setlength{\headheight}{22pt}
+\usepackage{hyperref}
+\usepackage[most]{tcolorbox}
+\usepackage{fvextra}
+\usepackage{listings}
+
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}[Scale=0.88]
+
+\definecolor{MohidBlue}{HTML}{183A59}
+\definecolor{MohidCyan}{HTML}{00A6A6}
+\definecolor{MohidInk}{HTML}{1C232B}
+\definecolor{MohidMuted}{HTML}{667085}
+\definecolor{MohidLight}{HTML}{F3F7FA}
+\definecolor{MohidPale}{HTML}{EAF6F6}
+\definecolor{MohidWarn}{HTML}{B35C00}
+\definecolor{MohidGreen}{HTML}{2D6A4F}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=MohidBlue,
+  citecolor=MohidBlue,
+  urlcolor=MohidCyan,
+  pdftitle={Mohid-NG: Restrições, princípios e arquitectura inicial},
+  pdfauthor={João Flávio Vieira de Vasconcellos},
+  pdfsubject={Documento fundador preliminar do Mohid-NG},
+  pdfkeywords={MOHID, Mohid-NG, Voronoi, finite volume, PETSc, Trilinos, C++20, Data-Oriented Design}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\sffamily\footnotesize Mohid-NG}
+\rhead{\sffamily\footnotesize Documento fundador preliminar}
+\cfoot{\sffamily\footnotesize \thepage\ de \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{MohidCyan}\leaders\hrule height \headrulewidth\hfill}}
+
+\titleformat{\section}{\sffamily\Large\bfseries\color{MohidBlue}}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\sffamily\large\bfseries\color{MohidInk}}{\thesubsection}{0.7em}{}
+\titleformat{\subsubsection}{\sffamily\normalsize\bfseries\color{MohidBlue}}{\thesubsubsection}{0.7em}{}
+\titlespacing*{\section}{0pt}{1.7em}{0.8em}
+\titlespacing*{\subsection}{0pt}{1.1em}{0.45em}
+\titlespacing*{\subsubsection}{0pt}{0.8em}{0.35em}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\setlist[itemize]{leftmargin=1.4em,itemsep=2pt,topsep=2pt}
+\setlist[enumerate]{leftmargin=1.6em,itemsep=2pt,topsep=2pt}
+\renewcommand{\arraystretch}{1.25}
+\sloppy
+\renewcommand{\contentsname}{Sumário}
+\newcommand{\docdate}{3 de junho de 2026}
+
+\newtcolorbox{principlebox}[1]{
+  enhanced,
+  breakable,
+  colback=MohidPale,
+  colframe=MohidCyan,
+  coltitle=MohidInk,
+  fonttitle=\sffamily\bfseries,
+  title=#1,
+  boxrule=0.7pt,
+  arc=2mm,
+  left=3mm,
+  right=3mm,
+  top=2mm,
+  bottom=2mm
+}
+
+\newtcolorbox{decisionbox}[1]{
+  enhanced,
+  breakable,
+  colback=MohidLight,
+  colframe=MohidBlue,
+  coltitle=white,
+  fonttitle=\sffamily\bfseries,
+  title=#1,
+  boxrule=0.7pt,
+  arc=2mm,
+  left=3mm,
+  right=3mm,
+  top=2mm,
+  bottom=2mm
+}
+
+\newcommand{\req}[1]{\textsf{\textbf{#1}}}
+\newcommand{\mohidng}{\textsc{Mohid-NG}}
+\newcommand{\vmm}{\textsc{VoronoiMeshMaker}}
+\newcommand{\petsc}{\textsc{PETSc}}
+\newcommand{\trilinos}{\textsc{Trilinos}}
+
+\lstdefinestyle{caseyaml}{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{MohidLight},
+  frame=single,
+  framerule=0.4pt,
+  rulecolor=\color{MohidCyan},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false
+}
+
+\begin{document}
+
+\begin{titlepage}
+\pagecolor{MohidBlue}
+\color{white}
+\vspace*{18mm}
+{\sffamily\fontsize{34}{38}\selectfont\bfseries Mohid-NG}\par
+\vspace{4mm}
+{\sffamily\fontsize{18}{22}\selectfont Restrições, princípios e arquitectura inicial}\par
+\vspace{12mm}
+\noindent\colorbox{MohidCyan}{\parbox{0.93\textwidth}{\vspace{4mm}\color{white}\sffamily\large Documento preliminar para análise, baseado nas decisões conceptuais discutidas para uma nova geração do MOHID em malhas Voronoi não estruturadas.\vspace{4mm}}}
+\vfill
+{\sffamily\large Versão de trabalho}\par
+{\sffamily\large \docdate}\par
+\vspace{8mm}
+{\sffamily\small Escopo: equivalência de equações e capacidades físicas do MOHID clássico, com discretização conservativa em volumes finitos sobre malhas não estruturadas.}\par
+\end{titlepage}
+\nopagecolor
+\color{MohidInk}
+
+\tableofcontents
+\newpage
+
+\section{Resumo executivo}
+
+\begin{principlebox}{Tese central}
+O \mohidng{} deve resolver as mesmas equações físicas e os mesmos modelos conceptuais do MOHID clássico, mas por uma discretização diferente, nativamente formulada para malhas não estruturadas do tipo Voronoi. O objectivo é compatibilidade de equações, não compatibilidade de índices, estruturas internas, malha escalonada ou reprodução bit a bit dos resultados.
+\end{principlebox}
+
+A leitura preliminar do MOHID público indica um sistema modular de modelação da água por volumes finitos, escrito maioritariamente em Fortran, com executáveis centrais para MOHID Water e MOHID Land, e ferramentas auxiliares de pré e pós-processamento. O repositório oficial descreve o MOHID como um sistema modular de volumes finitos em ANSI Fortran 95, com filosofia orientada a objectos, integrando modelos matemáticos diversos e interfaces gráficas para pré e pós-processamento.\footnote{Repositório oficial do MOHID: \url{https://github.com/Mohid-Water-Modelling-System/Mohid}.}
+
+O código público do MOHID actual mostra uma infraestrutura de malha horizontal organizada em torno de uma grelha logicamente estruturada, pontos de cálculo Z, U, V e Cross, arrays bidimensionais e métricas associadas a direcções estruturadas. O ficheiro \texttt{ModuleHorizontalGrid.F90} é descrito como módulo para ler e calcular uma grelha horizontal e contém rotinas como \texttt{GridPointsLocation1D}, \texttt{GridPointsLocation2D}, \texttt{ComputeDistances} e \texttt{ComputeGridCellArea}.\footnote{\url{https://github.com/Mohid-Water-Modelling-System/Mohid/blob/master/Software/MOHIDBase2/ModuleHorizontalGrid.F90}.} O módulo de geometria vertical do MOHID documenta opções como \texttt{FIXSPACING}, \texttt{SIGMA}, \texttt{CARTESIAN} e \texttt{FIXSEDIMENT}.\footnote{\url{https://github.com/Mohid-Water-Modelling-System/Mohid/blob/master/Software/MOHIDBase2/ModuleGeometry.F90}.}
+
+A consequência é directa: o \mohidng{} não deve ser uma tradução do MOHID clássico para C++ moderno. Deve ser uma nova plataforma conservativa de volumes finitos em malhas não estruturadas, preservando a ambição física e operacional do MOHID, mas substituindo o contrato geométrico por células, faces, nós, patches, campos, camadas e partículas.
+
+\section{Princípios fundadores}
+
+\begin{decisionbox}{Princípios de projecto}
+\begin{enumerate}
+\item O \mohidng{} deve resolver as mesmas equações físicas do MOHID clássico, quando o respectivo modelo tiver sido portado.
+\item O \mohidng{} não deve reproduzir obrigatoriamente a discretização, a malha escalonada, os índices ou a estrutura de dados do MOHID clássico.
+\item O \mohidng{} deve ser nativamente formulado para malhas não estruturadas, com prioridade para malhas Voronoi.
+\item O \vmm{} será o gerador de malhas associado ao sistema, mas o solver não deve expor tipos internos do \vmm{} nem tipos CGAL.
+\item O núcleo numérico deve ser orientado a desempenho de execução, não a tempo de compilação.
+\item O núcleo quente não deve usar herança, classes virtuais ou grafos de objectos com ponteiros polimórficos.
+\item A API pública deve ser simples e operacional. O utilizador não deve precisar dominar C++ moderno para configurar, executar e analisar simulações.
+\end{enumerate}
+\end{decisionbox}
+
+A frase curta do projecto deve ser: \textbf{o \mohidng{} porta equações, não porta índices}. Cada modelo físico deve ser reconstruído a partir da sua formulação contínua, da sua forma integral conservativa e da sua discretização por fluxos de face em volumes Voronoi.
+
+\section{Compatibilidade com o MOHID clássico}
+
+\subsection{O que deve permanecer equivalente}
+
+Devem permanecer equivalentes, tanto quanto possível, as equações governantes, as hipóteses físicas, as variáveis prognósticas e diagnósticas, os termos fonte e sumidouro, os modelos constitutivos, as parametrizações empíricas, as leis de troca entre compartimentos, as unidades físicas e os acoplamentos principais entre hidrodinâmica, transporte, sedimentos, qualidade da água, bacias, rios e partículas lagrangianas.
+
+\subsection{O que deve mudar}
+
+Devem mudar a representação da malha, a conectividade, os operadores diferenciais, a reconstrução de gradientes, a interpolação para faces, a montagem de fluxos, o tratamento de fronteiras, a paralelização, a estrutura de memória e a montagem de sistemas lineares e não lineares.
+
+A discretização de uma equação de transporte escalar é um exemplo mínimo. A equação contínua pode ser escrita como
+\[
+\pdv{\phi}{t} + \div(\vb{u}\phi) = \div\left(K\grad\phi\right) + S_\phi.
+\]
+Em uma célula Voronoi \(P\), a forma discreta conservativa deve ser formulada em termos de fluxos por face:
+\[
+\dv{}{t}(V_P\phi_P) + \sum_{f\in\partial P} (\vb{u}_f\vdot\vb{n}_f)\phi_f A_f = \sum_{f\in\partial P} K_f \grad\phi_f\vdot\vb{n}_f A_f + V_P S_{\phi,P}.
+\]
+A física é a mesma. A discretização e a geometria discreta são diferentes.
+
+\section{Restrições funcionais}
+
+\begin{longtable}{>{\sffamily\bfseries}p{0.21\textwidth}p{0.72\textwidth}}
+\toprule
+ID & Restrição funcional \\
+\midrule
+\endfirsthead
+\toprule
+ID & Restrição funcional \\
+\midrule
+\endhead
+\req{REQ-F-EQ-001} & O \mohidng{} deve resolver as mesmas equações físicas e modelos matemáticos do MOHID clássico, quando o respectivo modelo estiver implementado. \\
+\req{REQ-F-EQ-002} & Para cada modelo portado, deve existir documentação separando a equação contínua, os termos físicos, os fechos empíricos, as condições de fronteira, a forma integral e a discretização Voronoi. \\
+\req{REQ-F-MESH-001} & O sistema deve aceitar malhas não estruturadas poligonais em 2D e, progressivamente, malhas poliédricas ou extrudidas em 3D. \\
+\req{REQ-F-MESH-002} & A malha deve fornecer células, faces, nós, vizinhos, volumes, áreas ou comprimentos de face, centróides, normais orientadas, patches de fronteira, regiões físicas e metadados. \\
+\req{REQ-F-MESH-003} & O solver não deve depender de CGAL nem de tipos internos do \vmm{}. A interface entre gerador e solver deve ser por ficheiro, API limpa ou ambos. \\
+\req{REQ-F-FV-001} & Toda equação conservativa deve ser implementada em termos de balanços de volume e fluxos por face. \\
+\req{REQ-F-FIELD-001} & O sistema deve suportar campos cell-centred, face-centred, node-centred quando necessário, campos por camada vertical, campos por partícula e campos associados a boundary patches. \\
+\req{REQ-F-VERT-001} & O sistema deve prever coordenadas verticais fixas, cartesianas, sigma, sedimento e geometrias variáveis no tempo, generalizadas para colunas associadas a células Voronoi. \\
+\req{REQ-F-BC-001} & Fronteiras devem ser representadas como patches de faces, não como bordas norte, sul, leste ou oeste. \\
+\req{REQ-F-IO-001} & O sistema deve oferecer I/O para malhas, campos, partículas, séries temporais, restart, diagnósticos e metadados. HDF5, NetCDF-CF e VTU/VTK devem ser considerados formatos prioritários. \\
+\req{REQ-F-VALID-001} & Cada modelo físico importante deve ter testes de conservação, casos analíticos quando existirem, casos idealizados e comparação com o MOHID clássico em geometrias equivalentes. \\
+\bottomrule
+\end{longtable}
+
+\section{Restrições não funcionais}
+
+\begin{longtable}{>{\sffamily\bfseries}p{0.21\textwidth}p{0.72\textwidth}}
+\toprule
+ID & Restrição não funcional \\
+\midrule
+\endfirsthead
+\toprule
+ID & Restrição não funcional \\
+\midrule
+\endhead
+\req{REQ-NF-PERF-001} & O \mohidng{} deve priorizar desempenho em tempo de execução. Aumento de tempo de compilação é aceitável quando reduz tempo de CPU, tráfego de memória, custo de comunicação ou custo de solver. \\
+\req{REQ-NF-ARCH-001} & O núcleo computacional não deve usar herança nem classes virtuais como mecanismo arquitectural. \\
+\req{REQ-NF-ARCH-002} & O núcleo deve usar composição, tipos concretos, polimorfismo estático, \texttt{concepts}, \texttt{traits}, policies, \texttt{constexpr}, factories tipadas e armazenamento data-oriented. \\
+\req{REQ-NF-DOD-001} & Dados grandes devem usar memória contígua, preferencialmente Structure of Arrays, views e índices inteiros fortes. \\
+\req{REQ-NF-SOLVER-001} & PETSc e Trilinos devem ser backends opcionais. A camada física não deve expor \texttt{Vec}, \texttt{Mat}, \texttt{KSP}, \texttt{Tpetra}, \texttt{Belos} ou outros tipos nativos desses ecossistemas. \\
+\req{REQ-NF-UX-001} & O utilizador operacional não deve precisar conhecer C++ moderno para configurar, executar, validar ou pós-processar casos. \\
+\req{REQ-NF-REPRO-001} & Toda simulação deve ser reproduzível a partir de ficheiros de caso, versão do código, versão da malha, parâmetros, condições iniciais, fronteiras, forçantes, opções numéricas e sementes aleatórias quando existirem. \\
+\req{REQ-NF-PAR-001} & A estrutura de dados deve nascer compatível com paralelismo por MPI e memória compartilhada, mesmo que a primeira implementação seja serial. \\
+\req{REQ-NF-CONS-001} & Conservação de massa, quantidade de movimento e escalares deve ser auditável por diagnósticos de balanço. \\
+\req{REQ-NF-ROBUST-001} & A malha e os casos devem ser validados antes da simulação para detectar degenerações geométricas, fronteiras incompletas, volumes negativos, faces inválidas e inconsistências de metadados. \\
+\bottomrule
+\end{longtable}
+
+\section{Arquitectura de software}
+
+\subsection{Data-Oriented Design como base}
+
+O Data-Oriented Design deve ser a base do núcleo quente. Isso implica arrays contíguos, Structure of Arrays, \texttt{std::span} ou views equivalentes, índices fortes, loops por células, faces, camadas e partículas, separação entre topologia, geometria e campos, e ausência de ponteiros polimórficos em regiões críticas.
+
+\subsection{SOLID reinterpretado}
+
+O SOLID clássico não deve ser aplicado literalmente, porque está historicamente associado a herança, interfaces e polimorfismo dinâmico. Ainda assim, alguns princípios continuam úteis se reinterpretados: responsabilidade única por módulo, segregação de interfaces por \texttt{concepts}, inversão de dependência por adapters e backends concretos, e extensibilidade por traits, policies, factories tipadas e \texttt{std::variant}. O princípio de substituição de Liskov perde relevância porque não haverá hierarquias de classes no núcleo.
+
+\subsection{Factories, traits e policies}
+
+Factories devem montar objectos concretos, \texttt{std::variant} ou pipelines tipados. Elas não devem devolver ponteiros para classes-base abstractas. Traits devem descrever propriedades de malhas, campos, operadores e backends. Policies devem representar escolhas numéricas, como gradiente, interpolação, fluxo, limitador, integração temporal e montagem de matriz.
+
+\subsection{Camadas de utilização}
+
+O projecto deve reconhecer três perfis de utilizador. O utilizador operacional trabalha com ficheiros de caso e ferramentas de linha de comando. O utilizador programador comum usa uma API C++ simples e estável, sem templates explícitos. O desenvolvedor interno usa C++ moderno, concepts, traits, policies, PETSc, Trilinos e estruturas data-oriented.
+
+\begin{lstlisting}[style=caseyaml,caption={Exemplo mínimo de interface declarativa para utilizador operacional.}]
+case:
+  name: ria_de_aveiro_test
+
+mesh:
+  file: ria_de_aveiro.vmmesh
+  generator: VoronoiMeshMaker
+
+models:
+  - hydrodynamics_2d
+  - salinity_transport
+
+numerics:
+  gradient: wlsqr-id2
+  advection: upwind
+  time_integrator: implicit_euler
+
+solver:
+  backend: petsc
+
+output:
+  format: netcdf
+  interval: 600.0
+\end{lstlisting}
+
+\section{PETSc e Trilinos}
+
+A decisão recomendada é adoptar PETSc como backend primário inicial e manter Trilinos como backend opcional. PETSc documenta o módulo DMPlex para malhas não estruturadas e complexos celulares, além de estruturas DM para ligação entre solvers e discretizações.\footnote{Manual PETSc 3.25.2, secção DM e DMPlex: \url{https://petsc.org/release/manual/}.} Trilinos é uma colecção de mais de 50 pacotes independentes, com pacotes relevantes como Kokkos, Tpetra, Ifpack2, MueLu, Belos, NOX, Tempus, ROL, STK, Zoltan e Zoltan2.\footnote{Lista oficial de pacotes do Trilinos: \url{https://trilinos.github.io/packages.html}.}
+
+\begin{decisionbox}{Regra para bibliotecas externas}
+O \mohidng{} deve montar equações, resíduos, fluxos, campos e sistemas discretos. PETSc e Trilinos devem resolver sistemas lineares, não lineares, temporais ou de optimização quando isso for vantajoso. Eles não devem definir a física nem contaminar a camada de modelos físicos.
+\end{decisionbox}
+
+Usar PETSc e Trilinos simultaneamente é possível, mas aumenta o custo de build, dependências, conflitos potenciais de MPI/BLAS/HDF5, duplicação de estruturas e complexidade de depuração. Portanto, ambos devem ser opcionais, e uma compilação válida do \mohidng{} não deve exigir os dois ao mesmo tempo.
+
+\section{Grandes grupos do sistema}
+
+\begin{tabularx}{\textwidth}{>{\sffamily\bfseries}p{0.25\textwidth}X}
+\toprule
+Grupo & Responsabilidade principal \\
+\midrule
+\texttt{Core} & Tipos básicos, índices fortes, erros, logging, configuração, metadados, unidades e utilitários de baixo nível. \\
+\texttt{Mesh} & Malha não estruturada, conectividade célula-face-nó, métricas geométricas, patches, regiões, validação e partição. \\
+\texttt{Vertical} & Colunas verticais, camadas sigma, cartesianas, fixas, sedimento, volumes 3D e áreas laterais. \\
+\texttt{Fields} & Campos escalares e vectoriais em células, faces, nós, camadas, partículas e patches. \\
+\texttt{Numerics} & Gradiente, divergência, interpolação, reconstrução, fluxos, limitadores, integração temporal, montagem e resíduos. \\
+\texttt{Solvers} & Backends nativo, PETSc e Trilinos, sistemas lineares, não lineares, precondicionadores e integração implícita. \\
+\texttt{Hydrodynamics} & Hidrodinâmica 2D/3D, superfície livre, Coriolis, atrito, tensão de vento, viscosidade, turbulência e wetting/drying. \\
+\texttt{Transport} & Transporte escalar conservativo, salinidade, temperatura, traçadores, fontes, sumidouros, advecção e difusão. \\
+\texttt{WaterQuality} & Qualidade da água, biogeoquímica, reacções locais, nutrientes, oxigénio, fitoplâncton e acoplamentos. \\
+\texttt{Sediments} & Sedimento em suspensão, leito, erosão, deposição, ressuspensão e classes granulométricas. \\
+\texttt{Lagrangian} & Partículas, óleo, lixo flutuante, beaching, ressuspensão, difusão estocástica e acoplamento Euleriano-Lagrangiano. \\
+\texttt{LandRiver} & Bacias, escoamento superficial, rios, infiltração, aquíferos e acoplamento com domínios costeiros. \\
+\texttt{BoundaryForcing} & Fronteiras abertas, paredes, rios, descarga, maré, vento, pressão, precipitação, evaporação e séries temporais. \\
+\texttt{Coupling} & Nesting, two-way coupling, troca entre malhas, interpolação conservativa e acoplamento entre modelos. \\
+\texttt{IO} & HDF5, NetCDF-CF, VTK/VTU, restart, malhas, campos, metadados, séries temporais e relatórios. \\
+\texttt{Legacy} & Conversão, importação e comparação com casos ou formatos do MOHID clássico. \\
+\texttt{Validation} & Testes analíticos, regressão, benchmarks, auditorias de conservação e comparação com MOHID clássico. \\
+\bottomrule
+\end{tabularx}
+
+\section{Árvore detalhada de ficheiros proposta}
+
+A árvore abaixo é uma proposta de organização inicial. Ela favorece modularidade, separação entre API pública e implementação, builds opcionais de PETSc/Trilinos, documentação, schemas de casos, testes, validação e exemplos. A lista é deliberadamente detalhada para servir como ponto de partida para o repositório.
+
+\begin{Verbatim}[fontsize=\scriptsize,breaklines=true,breakanywhere=true]
+MohidNG/
+├── CMakeLists.txt
+├── CMakePresets.json
+├── README.md
+├── LICENSE
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── .clang-format
+├── .clang-tidy
+├── .gitignore
+├── cmake/
+│   ├── MohidNGOptions.cmake
+│   ├── MohidNGCompilerOptions.cmake
+│   ├── MohidNGDependencies.cmake
+│   ├── MohidNGSanitizers.cmake
+│   ├── MohidNGWarnings.cmake
+│   ├── MohidNGInstall.cmake
+│   ├── FindPETSc.cmake
+│   ├── FindTrilinos.cmake
+│   ├── FindHDF5.cmake
+│   └── FindNetCDF.cmake
+├── include/
+│   └── MohidNG/
+│       ├── MohidNG.hpp
+│       ├── Core/
+│       │   ├── Types.hpp
+│       │   ├── Indices.hpp
+│       │   ├── StrongIndex.hpp
+│       │   ├── Concepts.hpp
+│       │   ├── Error.hpp
+│       │   ├── Result.hpp
+│       │   ├── Logger.hpp
+│       │   ├── Metadata.hpp
+│       │   ├── Units.hpp
+│       │   ├── Config.hpp
+│       │   ├── Registry.hpp
+│       │   └── ParallelContext.hpp
+│       ├── Mesh/
+│       │   ├── Mesh.hpp
+│       │   ├── MeshView.hpp
+│       │   ├── MeshTraits.hpp
+│       │   ├── MeshGeometry.hpp
+│       │   ├── MeshTopology.hpp
+│       │   ├── MeshConnectivity.hpp
+│       │   ├── CellRange.hpp
+│       │   ├── FaceRange.hpp
+│       │   ├── NodeRange.hpp
+│       │   ├── BoundaryPatch.hpp
+│       │   ├── Region.hpp
+│       │   ├── MeshQuality.hpp
+│       │   ├── MeshValidator.hpp
+│       │   ├── MeshPartition.hpp
+│       │   ├── GhostLayer.hpp
+│       │   ├── VoronoiMeshReader.hpp
+│       │   └── MeshFactory.hpp
+│       ├── Vertical/
+│       │   ├── VerticalGrid.hpp
+│       │   ├── VerticalTraits.hpp
+│       │   ├── LayerGeometry.hpp
+│       │   ├── SigmaLayers.hpp
+│       │   ├── CartesianLayers.hpp
+│       │   ├── FixedSpacingLayers.hpp
+│       │   ├── SedimentLayers.hpp
+│       │   ├── ColumnGeometry.hpp
+│       │   └── VerticalFactory.hpp
+│       ├── Fields/
+│       │   ├── Field.hpp
+│       │   ├── FieldView.hpp
+│       │   ├── FieldTraits.hpp
+│       │   ├── FieldLocation.hpp
+│       │   ├── FieldRegistry.hpp
+│       │   ├── ScalarField.hpp
+│       │   ├── VectorField.hpp
+│       │   ├── CellField.hpp
+│       │   ├── FaceField.hpp
+│       │   ├── NodeField.hpp
+│       │   ├── LayerField.hpp
+│       │   ├── ParticleField.hpp
+│       │   ├── BoundaryField.hpp
+│       │   └── FieldFactory.hpp
+│       ├── Numerics/
+│       │   ├── Numerics.hpp
+│       │   ├── Operators/
+│       │   │   ├── Gradient.hpp
+│       │   │   ├── GradientTraits.hpp
+│       │   │   ├── GreenGauss.hpp
+│       │   │   ├── WeightedLeastSquares.hpp
+│       │   │   ├── WeightedLeastSquaresQR.hpp
+│       │   │   ├── Divergence.hpp
+│       │   │   ├── Interpolation.hpp
+│       │   │   ├── Reconstruction.hpp
+│       │   │   └── OperatorFactory.hpp
+│       │   ├── Flux/
+│       │   │   ├── AdvectiveFlux.hpp
+│       │   │   ├── DiffusiveFlux.hpp
+│       │   │   ├── UpwindFlux.hpp
+│       │   │   ├── CentralFlux.hpp
+│       │   │   ├── RiemannFlux.hpp
+│       │   │   └── FluxFactory.hpp
+│       │   ├── Limiters/
+│       │   │   ├── Limiter.hpp
+│       │   │   ├── Minmod.hpp
+│       │   │   ├── VanLeer.hpp
+│       │   │   └── LimiterFactory.hpp
+│       │   ├── Assembly/
+│       │   │   ├── LinearSystem.hpp
+│       │   │   ├── SparsePattern.hpp
+│       │   │   ├── MatrixBuilder.hpp
+│       │   │   ├── Residual.hpp
+│       │   │   └── ConservationAudit.hpp
+│       │   └── Time/
+│       │       ├── TimeState.hpp
+│       │       ├── TimeStepper.hpp
+│       │       ├── ExplicitEuler.hpp
+│       │       ├── ImplicitEuler.hpp
+│       │       ├── CrankNicolson.hpp
+│       │       └── TimeFactory.hpp
+│       ├── Solvers/
+│       │   ├── SolverBackend.hpp
+│       │   ├── SolverOptions.hpp
+│       │   ├── NativeBackend.hpp
+│       │   ├── PetscBackend.hpp
+│       │   ├── TrilinosBackend.hpp
+│       │   ├── LinearSolver.hpp
+│       │   ├── NonlinearSolver.hpp
+│       │   ├── Preconditioner.hpp
+│       │   └── SolverFactory.hpp
+│       ├── BoundaryForcing/
+│       │   ├── BoundaryCondition.hpp
+│       │   ├── BoundaryTraits.hpp
+│       │   ├── OpenBoundary.hpp
+│       │   ├── WallBoundary.hpp
+│       │   ├── RiverInflow.hpp
+│       │   ├── PointDischarge.hpp
+│       │   ├── SurfaceForcing.hpp
+│       │   ├── TideForcing.hpp
+│       │   ├── WindForcing.hpp
+│       │   ├── AtmosphericPressure.hpp
+│       │   ├── Precipitation.hpp
+│       │   ├── Evaporation.hpp
+│       │   ├── TimeSeries.hpp
+│       │   └── BoundaryFactory.hpp
+│       ├── Models/
+│       │   ├── ModelCatalogue.hpp
+│       │   ├── ModelFactory.hpp
+│       │   ├── Transport/
+│       │   │   ├── ConservativeScalar.hpp
+│       │   │   ├── PassiveTracer.hpp
+│       │   │   ├── Salinity.hpp
+│       │   │   ├── Temperature.hpp
+│       │   │   └── TransportKernel.hpp
+│       │   ├── Hydrodynamics/
+│       │   │   ├── ShallowWater2D.hpp
+│       │   │   ├── Hydrostatic3D.hpp
+│       │   │   ├── FreeSurface.hpp
+│       │   │   ├── BottomFriction.hpp
+│       │   │   ├── WindStress.hpp
+│       │   │   ├── Coriolis.hpp
+│       │   │   ├── TurbulenceClosure.hpp
+│       │   │   └── WettingDrying.hpp
+│       │   ├── WaterQuality/
+│       │   │   ├── WaterQualityState.hpp
+│       │   │   ├── Oxygen.hpp
+│       │   │   ├── Nutrients.hpp
+│       │   │   ├── Phytoplankton.hpp
+│       │   │   ├── OrganicMatter.hpp
+│       │   │   └── ReactionKernel.hpp
+│       │   ├── Sediments/
+│       │   │   ├── SuspendedSediment.hpp
+│       │   │   ├── BedSediment.hpp
+│       │   │   ├── Erosion.hpp
+│       │   │   ├── Deposition.hpp
+│       │   │   ├── Resuspension.hpp
+│       │   │   └── GrainClass.hpp
+│       │   ├── Lagrangian/
+│       │   │   ├── ParticleSet.hpp
+│       │   │   ├── ParticleTraits.hpp
+│       │   │   ├── ParticleLocator.hpp
+│       │   │   ├── ParticleAdvection.hpp
+│       │   │   ├── RandomWalkDiffusion.hpp
+│       │   │   ├── Beaching.hpp
+│       │   │   ├── OilParticle.hpp
+│       │   │   └── LitterParticle.hpp
+│       │   └── LandRiver/
+│       │       ├── SurfaceRunoff.hpp
+│       │       ├── RiverNetwork.hpp
+│       │       ├── Infiltration.hpp
+│       │       ├── Aquifer.hpp
+│       │       └── LandWaterCoupling.hpp
+│       ├── Coupling/
+│       │   ├── Coupler.hpp
+│       │   ├── ConservativeRemap.hpp
+│       │   ├── NestedDomain.hpp
+│       │   ├── TwoWayCoupling.hpp
+│       │   ├── EulerianLagrangianCoupling.hpp
+│       │   └── CouplingFactory.hpp
+│       ├── IO/
+│       │   ├── CaseReader.hpp
+│       │   ├── CaseSchema.hpp
+│       │   ├── MeshIO.hpp
+│       │   ├── FieldIO.hpp
+│       │   ├── RestartIO.hpp
+│       │   ├── DiagnosticsIO.hpp
+│       │   ├── HDF5Writer.hpp
+│       │   ├── HDF5Reader.hpp
+│       │   ├── NetCDFWriter.hpp
+│       │   ├── NetCDFReader.hpp
+│       │   ├── VTKWriter.hpp
+│       │   ├── VTUWriter.hpp
+│       │   └── IOFactory.hpp
+│       ├── Legacy/
+│       │   ├── MohidClassicImporter.hpp
+│       │   ├── BathymetryImporter.hpp
+│       │   ├── TimeSeriesImporter.hpp
+│       │   ├── LegacyCaseConverter.hpp
+│       │   └── LegacyComparison.hpp
+│       └── Validation/
+│           ├── AnalyticalCase.hpp
+│           ├── ConservationTest.hpp
+│           ├── RegressionTest.hpp
+│           ├── BenchmarkCase.hpp
+│           ├── MeshQualityReport.hpp
+│           └── ValidationReport.hpp
+├── src/
+│   ├── Core/
+│   ├── Mesh/
+│   ├── Vertical/
+│   ├── Fields/
+│   ├── Numerics/
+│   ├── Solvers/
+│   ├── BoundaryForcing/
+│   ├── Models/
+│   ├── Coupling/
+│   ├── IO/
+│   ├── Legacy/
+│   └── Validation/
+├── apps/
+│   ├── mohid-ng-run.cpp
+│   ├── mohid-ng-check-mesh.cpp
+│   ├── mohid-ng-convert-mesh.cpp
+│   ├── mohid-ng-validate-case.cpp
+│   └── mohid-ng-report.cpp
+├── schemas/
+│   ├── case.schema.yaml
+│   ├── mesh.schema.yaml
+│   ├── boundary.schema.yaml
+│   ├── output.schema.yaml
+│   └── solver.schema.yaml
+├── cases/
+│   ├── transport_passive_2d/
+│   ├── diffusion_voronoi_2d/
+│   ├── shallow_water_channel_2d/
+│   ├── ria_de_aveiro_demo/
+│   └── legacy_comparison/
+├── examples/
+│   ├── 01_read_mesh/
+│   ├── 02_check_mesh_quality/
+│   ├── 03_scalar_transport/
+│   ├── 04_vtk_output/
+│   ├── 05_petsc_linear_solver/
+│   └── 06_lagrangian_particles/
+├── tests/
+│   ├── unit/
+│   │   ├── test_core_indices.cpp
+│   │   ├── test_mesh_connectivity.cpp
+│   │   ├── test_boundary_patches.cpp
+│   │   ├── test_field_registry.cpp
+│   │   ├── test_gradient_operators.cpp
+│   │   └── test_conservation_audit.cpp
+│   ├── integration/
+│   │   ├── test_case_reader.cpp
+│   │   ├── test_voronoi_mesh_reader.cpp
+│   │   ├── test_transport_pipeline.cpp
+│   │   └── test_restart_roundtrip.cpp
+│   ├── validation/
+│   │   ├── test_diffusion_manufactured_solution.cpp
+│   │   ├── test_passive_tracer_conservation.cpp
+│   │   └── test_shallow_water_channel.cpp
+│   └── performance/
+│       ├── bench_gradient.cpp
+│       ├── bench_flux_assembly.cpp
+│       ├── bench_matrix_assembly.cpp
+│       └── bench_particle_location.cpp
+├── docs/
+│   ├── user_guide/
+│   ├── modeller_guide/
+│   ├── developer_guide/
+│   ├── mathematical_model_catalogue/
+│   ├── architecture/
+│   └── validation/
+├── scripts/
+│   ├── format.sh
+│   ├── configure_petsc.sh
+│   ├── configure_trilinos.sh
+│   ├── run_validation_suite.py
+│   ├── plot_conservation_report.py
+│   └── compare_with_legacy_mohid.py
+├── benchmarks/
+│   ├── mesh_scaling/
+│   ├── transport_scaling/
+│   ├── solver_scaling/
+│   └── particle_scaling/
+├── third_party/
+│   └── README.md
+└── .github/
+    └── workflows/
+        ├── ci-linux.yml
+        ├── ci-sanitizers.yml
+        ├── docs.yml
+        └── validation.yml
+\end{Verbatim}
+
+\section{Catálogo matemático dos modelos}
+
+Cada modelo portado deve ter uma ficha matemática. Esta ficha deve vir antes da implementação e deve ficar sob \texttt{docs/mathematical\_model\_catalogue/}. A ficha mínima deve conter: nome do modelo, módulo equivalente no MOHID clássico, variáveis prognósticas, variáveis diagnósticas, equações contínuas, hipóteses físicas, termos fonte, termos de fecho, condições iniciais, condições de fronteira, forma integral, discretização em células Voronoi, operadores necessários, estratégia de solução, critérios de conservação, casos de validação e limitações conhecidas.
+
+\section{UX, API pública e configuração}
+
+A API pública deve ser orientada por conceitos físicos e operacionais. O utilizador deve pensar em caso, malha, modelo, campo, fronteira, forçante, solver, tempo e output. Não deve pensar em \texttt{std::variant}, \texttt{concepts}, \texttt{traits}, \texttt{PETSc Vec}, \texttt{Trilinos Tpetra} ou tipos CGAL.
+
+Ferramentas mínimas de linha de comando:
+\begin{itemize}
+\item \texttt{mohid-ng run case.yaml}
+\item \texttt{mohid-ng check-mesh mesh.vmmesh}
+\item \texttt{mohid-ng convert-mesh mesh.vmmesh mesh.vtu}
+\item \texttt{mohid-ng validate-case case.yaml}
+\item \texttt{mohid-ng report simulation.h5}
+\end{itemize}
+
+\section{Validação e conservação}
+
+A conservação deve ser uma propriedade auditável. Para uma quantidade conservada \(\phi\), o sistema deve reportar massa inicial, massa final, fluxo líquido pelas fronteiras, fontes internas, resíduo absoluto e resíduo relativo. Em termos discretos, a auditoria mínima deve avaliar
+\[
+R_\phi = \Delta M_\phi + \Delta t\sum_{f\in\partial\Omega} F_f A_f - \Delta t\sum_P S_{\phi,P}V_P.
+\]
+A mesma filosofia deve ser aplicada a água, sal, temperatura, traçadores, sedimentos e outras quantidades conservativas.
+
+\section{Riscos técnicos principais}
+
+\begin{tabularx}{\textwidth}{>{\sffamily\bfseries}p{0.25\textwidth}X}
+\toprule
+Risco & Mitigação \\
+\midrule
+Ambição excessiva da versão inicial & Definir versão 0.1 como kernel geométrico, campos, I/O e operadores básicos. Adiar hidrodinâmica 3D completa. \\
+Mistura entre física e discretização & Exigir ficha matemática antes de cada módulo e revisão explícita da forma integral. \\
+Acoplamento indevido a PETSc ou Trilinos & Encapsular bibliotecas externas em backends opcionais. \\
+API pública difícil & Manter interface declarativa por ficheiros de caso e comandos de alto nível. \\
+Malha Voronoi inválida para simulação & Criar validação geométrica, topológica e científica antes da execução. \\
+Perda de conservação & Implementar auditoria de balanço desde a primeira versão. \\
+Paralelização tardia & Modelar ownership, ghost cells, halo faces e partição desde o desenho inicial. \\
+\bottomrule
+\end{tabularx}
+
+\section{Roadmap inicial sugerido}
+
+\begin{enumerate}
+\item \textbf{Versão 0.1, kernel geométrico}: leitura de malha Voronoi, validação, células, faces, nós, patches, campos, VTU e relatório de qualidade.
+\item \textbf{Versão 0.2, operadores}: gradiente, divergência, interpolação de face, fluxo difusivo, fluxo advectivo simples e auditoria de conservação.
+\item \textbf{Versão 0.3, transporte escalar}: advecção-difusão 2D com velocidade prescrita, fontes, fronteiras e validação analítica.
+\item \textbf{Versão 0.4, backend PETSc}: montagem de sistemas, solver linear, integração implícita simples e comparação com backend nativo.
+\item \textbf{Versão 0.5, hidrodinâmica 2D inicial}: águas rasas, conservação de massa, fronteira aberta simples, descarga fluvial e canal idealizado.
+\item \textbf{Versão 0.6, partículas}: localização em célula Voronoi, advecção, difusão aleatória, beaching simples e saída VTU/NetCDF.
+\item \textbf{Versão 1.0, plataforma inicial}: caso completo reprodutível, documentação, schemas estáveis, validação básica contra MOHID clássico e integração robusta com \vmm{}.
+\end{enumerate}
+
+\section{Questões em aberto}
+
+\begin{itemize}
+\item Qual será o primeiro conjunto de equações a portar: transporte passivo, difusão, águas rasas ou outro modelo?
+\item O ficheiro de malha \texttt{.vmmesh} será HDF5, NetCDF, JSON mais binário, ou outro formato?
+\item O \vmm{} exportará directamente partições paralelas ou o \mohidng{} fará a partição no carregamento?
+\item A primeira versão 3D será extrusão vertical de Voronoi 2D ou malha poliédrica geral?
+\item A configuração de casos será YAML, TOML ou outro formato declarativo?
+\item O backend PETSc será obrigatório na primeira versão de produção ou opcional desde o início?
+\item A camada Legacy apenas importará dados ou também tentará converter casos completos do MOHID clássico?
+\end{itemize}
+
+\section{Limitações deste documento}
+
+Este documento é uma proposta preliminar de arquitectura. Ele não substitui uma auditoria completa de todo o código MOHID clássico. A análise feita até aqui apoia-se em documentação pública, no repositório oficial e em ficheiros centrais como \texttt{ModuleHorizontalGrid.F90} e \texttt{ModuleGeometry.F90}. Nao consigo confirmar isso para todos os módulos históricos, ferramentas auxiliares e variantes internas sem uma auditoria linha a linha do repositório.
+
+\section{Formulação final}
+
+\begin{principlebox}{Definição operacional}
+O \mohidng{} será uma nova geração do MOHID que preserva as equações, os modelos físicos e a ambição operacional do sistema clássico, mas redesenha a malha, os operadores, os campos, a estrutura de dados, os solvers e a experiência de uso para uma formulação conservativa de volumes finitos sobre malhas Voronoi não estruturadas, com \vmm{} como gerador de malhas associado.
+\end{principlebox}
+
+\end{document}

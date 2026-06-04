@@ -4,21 +4,25 @@
 #include <string>
 
 #include "MohidNG/Core/Error.h"
+#include "MohidNG/Core/Logger.h"
 
 namespace mohidng {
 namespace {
 
 void ExpectToken(std::istream& stream, const std::string& expected) {
+  MOHIDNG_TRACE_SCOPE("ExpectToken");
   std::string token;
   stream >> token;
-  Require(token == expected, "Unexpected token while reading bootstrap mesh. Expected: " + expected);
+  Require(token == expected, "mesh.parse_error",
+          "Unexpected token while reading bootstrap mesh. Expected: " + expected);
 }
 
 }  // namespace
 
 MeshView ReadBootstrapMesh(const std::filesystem::path& path) {
+  MOHIDNG_TRACE_SCOPE("ReadBootstrapMesh");
   std::ifstream input(path);
-  Require(input.good(), "Could not open bootstrap mesh file.");
+  Require(input.good(), "mesh.file_not_found", path.string());
 
   ExpectToken(input, "MNGMESH1");
 
@@ -74,13 +78,13 @@ MeshView ReadBootstrapMesh(const std::filesystem::path& path) {
     } else if (token == "END") {
       break;
     } else {
-      throw MohidNgError("Unknown section in bootstrap mesh: " + token);
+      Raise(Error("mesh.parse_error", "Unknown section in bootstrap mesh: " + token));
     }
   }
 
   MeshView mesh(std::move(nodes), std::move(cells), std::move(faces), std::move(patches),
                 std::move(metadata));
-  Require(mesh.IsValid(), "Bootstrap mesh failed basic validation.");
+  Require(mesh.IsValid(), "mesh.invalid_connectivity", "Bootstrap mesh failed basic validation.");
   return mesh;
 }
 

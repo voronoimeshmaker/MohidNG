@@ -11,13 +11,12 @@ option(MOHIDNG_BUILD_DOCS "Build Mohid-NG documentation" OFF)
 
 include(cmake/MohidNGCompilerOptions.cmake)
 
-add_library(MohidNG STATIC
-  src/Core/Error.cc
-  src/Core/Version.cc
-  src/Mesh/MeshView.cc
-  src/Fields/FieldSet.cc
-  src/Numerics/Gradient.cc
-  src/IO/MeshReader.cc)
+file(GLOB_RECURSE MOHIDNG_LIBRARY_SOURCES
+  CONFIGURE_DEPENDS
+  ${PROJECT_SOURCE_DIR}/src/*.cc)
+list(SORT MOHIDNG_LIBRARY_SOURCES)
+
+add_library(MohidNG STATIC ${MOHIDNG_LIBRARY_SOURCES})
 
 add_library(MohidNG::MohidNG ALIAS MohidNG)
 
@@ -35,12 +34,9 @@ if(MOHIDNG_BUILD_TESTS OR MOHIDNG_BUILD_EXAMPLES)
 endif()
 
 if(MOHIDNG_BUILD_EXAMPLES)
-  add_subdirectory(examples/Ex01_ReadMesh)
-  add_subdirectory(examples/Ex02_CellField)
-  add_subdirectory(examples/Ex03_GradientReconstruction)
+  include(cmake/MohidNGExamples.cmake)
 endif()
 
 if(MOHIDNG_BUILD_TESTS)
-  add_subdirectory(tests/unit)
-  add_subdirectory(tests/integration)
+  include(cmake/MohidNGTests.cmake)
 endif()

@@ -6,7 +6,7 @@
 
 int main(int argc, char** argv) {
   if (argc != 2) {
-    std::cerr << "Usage: Ex01_ReadMesh <mesh-file>\n";
+    std::cerr << "Usage: exe_read_mesh <mesh-file>\n";
     return 1;
   }
 
@@ -18,3 +18,4 @@ int main(int argc, char** argv) {
   std::cout << "Boundary patches: " << mesh.BoundaryPatches().size() << "\n";
   return 0;
 }
+

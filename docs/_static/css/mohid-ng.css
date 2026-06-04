@@ -1,0 +1,167 @@
+html[data-theme="light"] {
+  --pst-color-primary: #073B4C;
+  --pst-color-secondary: #118AB2;
+  --pst-color-accent: #C9822B;
+  --pst-color-background: #F4FAFC;
+  --pst-color-on-background: #1F2933;
+  --pst-color-surface: #EEF4F7;
+  --pst-color-on-surface: #1F2933;
+  --pst-color-link: #0B5C75;
+  --pst-color-link-hover: #118AB2;
+  --pst-color-border: #D4E2E8;
+}
+
+html[data-theme="dark"] {
+  --pst-color-primary: #5BC0D8;
+  --pst-color-secondary: #47B5D1;
+  --pst-color-accent: #D6A354;
+  --pst-color-background: #071923;
+  --pst-color-on-background: #DDEFF4;
+  --pst-color-surface: #0B2530;
+  --pst-color-on-surface: #DDEFF4;
+  --pst-color-link: #5BC0D8;
+  --pst-color-link-hover: #8FD7E8;
+  --pst-color-border: #234857;
+}
+
+:root {
+  --pst-font-family-base: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --pst-font-family-monospace: "JetBrains Mono", "Cascadia Code", "Source Code Pro", monospace;
+  --pst-header-height: 4rem;
+}
+
+.bd-main .bd-content .bd-article-container {
+  max-width: 960px;
+}
+
+.hero-mohid {
+  border: 1px solid var(--pst-color-border);
+  border-radius: 18px;
+  padding: 2.2rem;
+  margin: 1.2rem 0 2rem 0;
+  background:
+    linear-gradient(135deg, rgba(7, 59, 76, 0.92), rgba(17, 138, 178, 0.78)),
+    radial-gradient(circle at 15% 20%, rgba(255,255,255,0.18), transparent 25%);
+  color: #F4FAFC;
+  box-shadow: 0 12px 26px rgba(7, 59, 76, 0.18);
+}
+
+.hero-mohid h1 {
+  color: #F4FAFC;
+  margin-top: 0;
+}
+
+.hero-mohid p {
+  font-size: 1.08rem;
+  max-width: 780px;
+}
+
+.mohid-card {
+  border: 1px solid var(--pst-color-border);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(7, 59, 76, 0.06);
+}
+
+.logo-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.institution-logo {
+  max-height: 58px;
+  max-width: 190px;
+  object-fit: contain;
+}
+
+.logo-card {
+  text-align: center;
+  border: 1px solid var(--pst-color-border);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(7, 59, 76, 0.06);
+}
+
+.workflow-line {
+  font-weight: 600;
+  color: var(--pst-color-primary);
+  background: var(--pst-color-surface);
+  border-left: 4px solid var(--pst-color-secondary);
+  padding: 0.9rem 1rem;
+  border-radius: 8px;
+}
+
+.admonition.voronoimeshmaker {
+  border-left-color: #118AB2;
+}
+
+.admonition.voronoimeshmaker .admonition-title {
+  background-color: rgba(17, 138, 178, 0.16);
+}
+
+.admonition.validation-gate {
+  border-left-color: #C9822B;
+}
+
+.admonition.validation-gate .admonition-title {
+  background-color: rgba(201, 130, 43, 0.18);
+}
+
+code, pre {
+  border-radius: 6px;
+}
+
+/* -------------------------------------------------------------------------
+   Mohid-NG Coastal Scientific Theme, documented design tokens.
+   Light palette: Deep Ocean #073B4C, Harbour Blue #0B5C75,
+   Tidal Teal #118AB2, Estuary Cyan #47B5D1, Foam #F4FAFC,
+   Mist #E8F1F5, Sand #D8B26E, Sediment Amber #C9822B,
+   Graphite #1F2933, Slate #52616B.
+   Dark palette: Abyss #071923, Deep Navy #0B2530,
+   Blue Graphite #102F3D, Muted Cyan #5BC0D8,
+   Foam Text #DDEFF4, Soft Slate #9DB3BD,
+   Sediment Gold #D6A354, Error Coral #E07A5F.
+   ------------------------------------------------------------------------- */
+
+.mohidng-hero,
+.hero-mohid {
+  border: 1px solid var(--pst-color-border);
+  border-radius: 18px;
+}
+
+.mohidng-workflow,
+.workflow-line {
+  font-weight: 600;
+}
+
+.admonition-voronoimeshmaker-responsibility,
+.admonition.voronoimeshmaker {
+  border-left-color: #118AB2;
+}
+
+.admonition-voronoimeshmaker-responsibility .admonition-title,
+.admonition.voronoimeshmaker .admonition-title {
+  background-color: rgba(17, 138, 178, 0.16);
+}
+
+.admonition-validation-gate,
+.admonition.validation-gate {
+  border-left-color: #C9822B;
+}
+
+.admonition-validation-gate .admonition-title,
+.admonition.validation-gate .admonition-title {
+  background-color: rgba(201, 130, 43, 0.18);
+}
+
+.admonition-conservation-requirement,
+.admonition.conservation-requirement {
+  border-left-color: #0B5C75;
+}
+
+.admonition-conservation-requirement .admonition-title,
+.admonition.conservation-requirement .admonition-title {
+  background-color: rgba(11, 92, 117, 0.14);
+}

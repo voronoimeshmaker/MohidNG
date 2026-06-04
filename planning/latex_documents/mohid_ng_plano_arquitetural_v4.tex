@@ -1,0 +1,1210 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazilian]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{amsmath,amssymb}
+\usepackage{physics}
+\usepackage[most]{tcolorbox}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\setlength{\headheight}{24pt}
+\usepackage{lastpage}
+\usepackage{listings}
+\usepackage{newunicodechar}
+\newunicodechar{≠}{\ensuremath{\neq}}
+
+\geometry{left=21mm,right=21mm,top=22mm,bottom=25mm}
+
+\definecolor{MohidBlue}{HTML}{12355B}
+\definecolor{MohidCyan}{HTML}{0B7285}
+\definecolor{MohidInk}{HTML}{1E293B}
+\definecolor{MohidGray}{HTML}{64748B}
+\definecolor{MohidSoft}{HTML}{F1F5F9}
+\definecolor{MohidLine}{HTML}{CBD5E1}
+\definecolor{MohidGreen}{HTML}{2F855A}
+\definecolor{MohidOrange}{HTML}{B7791F}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=MohidBlue,
+    urlcolor=MohidCyan,
+    citecolor=MohidBlue,
+    pdftitle={Mohid-NG, requisitos, arquitetura e plano de desenvolvimento, versão 4},
+    pdfauthor={Joao Flavio Vieira de Vasconcellos}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\textcolor{MohidGray}{Mohid-NG}}
+\rhead{\textcolor{MohidGray}{Plano arquitetural}}
+\cfoot{\textcolor{MohidGray}{\thepage\ de \pageref{LastPage}}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{MohidLine}\leaders\hrule height \headrulewidth\hfill}}
+
+\titleformat{\section}
+  {\Large\bfseries\color{MohidBlue}}
+  {\thesection}{0.8em}{}
+\titleformat{\subsection}
+  {\large\bfseries\color{MohidInk}}
+  {\thesubsection}{0.8em}{}
+\titleformat{\subsubsection}
+  {\normalsize\bfseries\color{MohidCyan}}
+  {\thesubsubsection}{0.8em}{}
+
+\setlist[itemize]{leftmargin=1.3em,itemsep=0.25em,topsep=0.25em}
+\setlist[enumerate]{leftmargin=1.5em,itemsep=0.25em,topsep=0.25em}
+\renewcommand{\arraystretch}{1.22}
+
+\tcbset{
+  enhanced,
+  sharp corners,
+  boxrule=0pt,
+  colback=MohidSoft,
+  colframe=MohidSoft,
+  left=1.0em,
+  right=1.0em,
+  top=0.75em,
+  bottom=0.75em
+}
+
+\newtcolorbox{principlebox}[1]{
+  colback=MohidBlue!6,
+  borderline west={2.0pt}{0pt}{MohidBlue},
+  title=\textbf{#1},
+  coltitle=MohidBlue,
+  attach title to upper={\par\smallskip}
+}
+
+\newtcolorbox{warningbox}[1]{
+  colback=MohidOrange!9,
+  borderline west={2.0pt}{0pt}{MohidOrange},
+  title=\textbf{#1},
+  coltitle=MohidOrange!80!black,
+  attach title to upper={\par\smallskip}
+}
+
+\newtcolorbox{decisionbox}[1]{
+  colback=MohidGreen!8,
+  borderline west={2.0pt}{0pt}{MohidGreen},
+  title=\textbf{#1},
+  coltitle=MohidGreen!70!black,
+  attach title to upper={\par\smallskip}
+}
+
+\lstdefinestyle{tree}{
+  basicstyle=\ttfamily\footnotesize,
+  columns=fullflexible,
+  breaklines=true,
+  frame=single,
+  framerule=0.2pt,
+  rulecolor=\color{MohidLine},
+  backgroundcolor=\color{MohidSoft},
+  xleftmargin=0.0em,
+  xrightmargin=0.0em
+}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{14mm}
+{\Huge\bfseries\color{MohidBlue} Mohid-NG\par}
+\vspace{3mm}
+{\Large\color{MohidInk} Requisitos, arquitetura e plano de desenvolvimento\par}
+\vspace{5mm}
+{\large\color{MohidGray} Vers\~ao 4, documento de discuss\~ao\par}
+\vfill
+\begin{tcolorbox}[colback=MohidBlue!5,width=0.86\textwidth]
+\large
+O Mohid-NG deve preservar as equa\c{c}\~oes e a ambi\c{c}\~ao f\'isica do MOHID cl\'assico, mas deve ser redesenhado para malhas Voronoi, arquitetura data-oriented, execu\c{c}\~ao r\'apida, extensibilidade controlada e uso operacional por n\~ao especialistas em C++ moderno.
+\end{tcolorbox}
+\vfill
+{\color{MohidGray}\today\par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Premissa fundamental}
+
+\begin{principlebox}{Declara\c{c}\~ao de escopo}
+O Mohid-NG dever\'a resolver as mesmas equa\c{c}\~oes f\'isicas e modelos matem\'aticos do MOHID cl\'assico sempre que o modelo correspondente tiver sido implementado. A discretiza\c{c}\~ao, a estrutura de dados, os operadores num\'ericos, a malha e os solvers poder\~ao ser diferentes.
+\end{principlebox}
+
+A regra de projeto \`e:
+\[
+\text{mesma f\'isica cont\'inua}\neq\text{mesma discretiza\c{c}\~ao}\neq\text{mesma arquitetura interna}.
+\]
+O Mohid-NG deve ser compat\'ivel com as equa\c{c}\~oes do MOHID, n\~ao necessariamente com os seus loops, \'{i}ndices, grelhas, esquemas de armazenamento ou resultados bit a bit.
+
+O MOHID cl\'assico \'e um sistema modular de modela\c{c}\~ao ambiental desenvolvido pela MARETEC/IST, com hidrodin\^amica, transporte, qualidade da \`agua, sedimentos, bacias, part\'iculas e ferramentas auxiliares. A documenta\c{c}\~ao p\'ublica descreve o MOHID Water como um modelo de volumes finitos com grelha horizontal ortogonal, coordenadas verticais gen\'ericas e distribui\c{c}\~ao Arakawa C.\footnote{MOHID Water Hydrodynamic, \url{https://www.mohid.com/pages/models/mohidwater/mohid_water_hydrodynamic.shtml}.} O c\'odigo p\'ublico tamb\'em mostra uma arquitetura de grelha horizontal com pontos de c\'alculo Z, U, V e Cross, al\'em de arrays bidimensionais para m\'etricas horizontais.\footnote{Reposit\'orio oficial MOHID, \url{https://github.com/Mohid-Water-Modelling-System/Mohid}.} O Mohid-NG n\~ao deve reproduzir essa depend\^encia estrutural de grelhas logicamente estruturadas.
+
+
+\section{Decis\~oes de alto n\'ivel}
+
+\begin{longtable}{p{0.24\textwidth}p{0.68\textwidth}}
+\toprule
+\textbf{Tema} & \textbf{Decis\~ao}\tabularnewline
+\midrule
+Malhas & O Mohid-NG usar\'a exclusivamente malhas fornecidas pelo contrato Voronoi do projeto. Toda gera\c{c}\~ao, adapta\c{c}\~ao, remeshing, redistribui\c{c}\~ao de pontos geradores, qualidade geom\'etrica, hierarquia de malha e reconstru\c{c}\~ao de conectividade pertence ao VoronoiMeshMaker.\tabularnewline
+\addlinespace
+CGAL & A depend\^encia de geometria computacional baseada em CGAL pertence ao VoronoiMeshMaker. O Mohid-NG n\~ao deve incluir tipos, headers ou estruturas CGAL na sua API ou no seu n\'ucleo.\tabularnewline
+\addlinespace
+Equa\c{c}\~oes & O Mohid-NG porta equa\c{c}\~oes, termos f\'isicos, fechos e acoplamentos. N\~ao porta loops, \`indices, grelhas estruturadas ou organiza\c{c}\~ao interna do MOHID cl\'assico.\tabularnewline
+\addlinespace
+Desempenho & O c\'odigo ser\'a pensado para execu\c{c}\~ao r\'apida. Tempo de compila\c{c}\~ao \textbf{n\~ao} \`e crit\'erio dominante quando houver ganho claro de desempenho em tempo de execu\c{c}\~ao.\tabularnewline
+\addlinespace
+C++ & O n\'ucleo poder\'a usar C++ moderno, templates, concepts, traits, policies e DOD. A API de usu\'ario deve continuar simples, declarativa e adequada para usu\'arios que n\~ao sejam especialistas em C++ moderno.\tabularnewline
+\addlinespace
+Heran\c{c}a & N\~ao usar heran\c{c}a ou classes virtuais como mecanismo arquitetural do n\'ucleo. Preferir composi\c{c}\~ao, tipos concretos, factories tipadas, traits, concepts e sele\c{c}\~ao em pontos frios.\tabularnewline
+\addlinespace
+Erros e exce\c{c}\~oes & \texttt{Error} e \texttt{Exception} s\~ao subsistemas separados. C\'odigos de erro devem ser flex\'iveis, textuais e registr\'aveis, sem \texttt{enum}. Mensagens devem ser tril\'ingues, com idioma padr\~ao \texttt{pt-br}.\tabularnewline
+\addlinespace
+Rastreio de fluxo & O logger/trace deve acompanhar o caminho do programa at\'e erros e exce\c{c}\~oes cadastrados. O rastreio deve ser ativo em desenvolvimento e compilado como no-op em Release, por \texttt{NDEBUG} ou mecanismo equivalente.\tabularnewline
+\addlinespace
+Visualiza\c{c}\~ao & VTK ser\'a usado como backend opcional de visualiza\c{c}\~ao e exporta\c{c}\~ao cient\'ifica, especialmente para sa\'idas compat\'iveis com ParaView. O core n\~ao deve depender obrigatoriamente de VTK.\tabularnewline
+\addlinespace
+Qt & Qt n\~ao entra no escopo inicial do core. Pode ser usado futuramente em uma aplica\c{c}\~ao gr\'afica separada, por exemplo Mohid-NG Studio.\tabularnewline
+\addlinespace
+Boost & Boost poder\'a ser usado seletivamente quando houver ganho claro, mas n\~ao deve ser depend\^encia monol\'itica obrigat\'oria. Preferir biblioteca padr\~ao, \texttt{fmt}, HDF5, NetCDF, VTK, GDAL/PROJ, PETSc ou outros backends quando forem mais adequados.\tabularnewline
+\addlinespace
+Solvers & PETSc, Trilinos, hypre, Zoltan, ParMETIS, PT-Scotch e outros pacotes devem entrar como backends opcionais e justificados. O Mohid-NG deve manter uma camada pr\'opria de conceitos num\'ericos e n\~ao expor objetos externos na API f\'isica.\tabularnewline
+\addlinespace
+GIS & GIS \`e camada de entrada, contexto, georreferenciamento, atributos, fronteiras e produtos derivados. A malha computacional usada pelo solver continua pertencendo ao contrato Voronoi.\tabularnewline
+\bottomrule
+\end{longtable}
+
+\section{Institui\c{c}\~ao, contato e reposit\'orio}
+
+\begin{principlebox}{Institui\c{c}\~ao participante}
+No momento, o Mohid-NG deve ser apresentado como projeto desenvolvido no Instituto Polit\'ecnico (IPRJ), unidade da Universidade do Estado do Rio de Janeiro (UERJ), Brasil. Logos institucionais devem representar a UERJ e o IPRJ/UERJ, respeitando permiss\~oes e normas de uso de marca.
+\end{principlebox}
+
+Os canais iniciais do projeto devem ser:
+\begin{itemize}
+  \item reposit\'orio ou organiza\c{c}\~ao GitHub: \texttt{mohidng};
+  \item e-mail de contato: \texttt{mohidng@hotmail};
+  \item documenta\c{c}\~ao tril\'ingue: ingl\^es brit\^anico, portugu\^es do Brasil e portugu\^es de Portugal;
+  \item idioma padr\~ao para mensagens internas de erro: portugu\^es do Brasil.
+\end{itemize}
+
+\begin{warningbox}{Separar hist\'oria de participa\c{c}\~ao}
+MARETEC, Instituto Superior T\'ecnico e Universidade de Lisboa podem ser mencionados como origem hist\'orica do MOHID cl\'assico quando necess\'ario. Eles n\~ao devem aparecer como institui\c{c}\~oes participantes do Mohid-NG sem confirma\c{c}\~ao formal.
+\end{warningbox}
+
+\section{Pol\'itica de depend\^encias externas}
+
+\begin{decisionbox}{Core pequeno, capacidades opcionais}
+O Mohid-NG deve iniciar com um n\'ucleo compil\'avel e test\'avel com poucas depend\^encias obrigat\'orias. Funcionalidades de visualiza\c{c}\~ao, GIS, solvers avan\c{c}ados, particionamento din\^amico, I/O cient\'ifico pesado e acelera\c{c}\~ao HPC devem ser ativadas por op\c{c}\~oes de build e adaptadores.
+\end{decisionbox}
+
+\begin{longtable}{p{0.25\textwidth}p{0.20\textwidth}p{0.45\textwidth}}
+\toprule
+\textbf{Biblioteca ou fam\'ilia} & \textbf{Pol\'itica} & \textbf{Uso previsto}\tabularnewline
+\midrule
+C++ standard library & Obrigat\'oria & Tipos fundamentais, containers, \texttt{std::span}, \texttt{std::filesystem}, algoritmos e infraestrutura b\'asica.\tabularnewline
+\addlinespace
+CMake & Obrigat\'oria & Configura\c{c}\~ao de build, op\c{c}\~oes, presets, testes e integra\c{c}\~ao cont\'inua.\tabularnewline
+\addlinespace
+Catch2 ou GoogleTest & Obrigat\'oria ou vendorizada & Testes unit\'arios, integra\c{c}\~ao e valida\c{c}\~ao regressiva.\tabularnewline
+\addlinespace
+\texttt{fmt} & Recomend\'avel & Mensagens, formata\c{c}\~ao segura, cat\'alogo tril\'ingue de erros, logs e relat\'orios.\tabularnewline
+\addlinespace
+yaml-cpp & Recomend\'avel & Leitura de arquivos de caso, sempre encapsulada por parser e valida\c{c}\~ao pr\'oprios do Mohid-NG.\tabularnewline
+\addlinespace
+VTK & Opcional inicial & Exporta\c{c}\~ao VTU/VTP/PVD, inspe\c{c}\~ao visual, ParaView, campos cell-centred e diagn\'osticos de malha.\tabularnewline
+\addlinespace
+HDF5 & Essencial em fase de contrato & Pacote de malha, checkpoint, restart, campos grandes, part\'iculas e metadados cient\'ificos.\tabularnewline
+\addlinespace
+NetCDF & Essencial para interoperabilidade & For\c{c}antes ambientais, produtos padronizados, dados gridados e compatibilidade com ecossistema oceanogr\'afico.\tabularnewline
+\addlinespace
+GDAL/PROJ & Opcional GIS & Leitura de camadas GIS, CRS, transforma\c{c}\~oes, rasters, vetores e produtos georreferenciados. N\~ao entram em kernels num\'ericos.\tabularnewline
+\addlinespace
+Eigen & Opcional local & \`Algebra pequena por c\'elula, least squares, QR/SVD local e reconstru\c{c}\~oes. N\~ao substitui solvers globais.\tabularnewline
+\addlinespace
+PETSc/hypre & Opcional HPC & Sistemas lineares/n\~ao lineares, AMG, solvers paralelos e integra\c{c}\~ao futura com simula\c{c}\~oes grandes.\tabularnewline
+\addlinespace
+Zoltan, ParMETIS, PT-Scotch & Opcional HPC & Particionamento ponderado, balanceamento din\^amico, migra\c{c}\~ao e suporte a malhas adaptativas.\tabularnewline
+\addlinespace
+Boost & Opcional seletivo & Usar apenas componentes justificados, por exemplo \texttt{Boost.Container}, \texttt{Boost.UUID}, \texttt{Boost.Stacktrace} ou \texttt{Boost.Endian}.\tabularnewline
+\bottomrule
+\end{longtable}
+
+\section{Fronteira entre Mohid-NG e VoronoiMeshMaker}
+
+\begin{decisionbox}{Separar responsabilidades}
+Qualquer implementa\c{c}\~ao relativa \`a gera\c{c}\~ao, adapta\c{c}\~ao, remeshing, qualidade, refinamento, coarsening, redistribui\c{c}\~ao de pontos geradores ou exporta\c{c}\~ao prim\'aria de malhas Voronoi deve ficar no VoronoiMeshMaker. O Mohid-NG deve consumir, validar operacionalmente e usar a malha, mas n\~ao deve duplicar o gerador.
+\end{decisionbox}
+
+\subsection{Responsabilidades do VoronoiMeshMaker}
+
+O VoronoiMeshMaker deve ser o componente respons\'avel por:
+\begin{itemize}
+  \item gerar malhas Voronoi 2D e 3D, incluindo a representa\c{c}\~ao columnar baseada em topologia Voronoi horizontal quando ela for selecionada para modelos hidrostaticos;
+  \item importar dados GIS para dom\'inio, fronteiras, regi\~oes, restri\c{c}\~oes geom\'etricas, batimetria, topografia e zonas de refinamento;
+  \item produzir conectividade c\'elula-face-c\'elula, n\'os, faces, volumes, \'{a}reas, normais orientadas, centr\'oides, patches de fronteira e regi\~oes f\'isicas;
+  \item calcular e reportar qualidade de malha, incluindo c\'elulas degeneradas, volumes pequenos, faces pequenas, skewness, n\~ao ortogonalidade e estat\'isticas geom\'etricas;
+  \item executar remeshing, adapta\c{c}\~ao por movimento de pontos geradores, inser\c{c}\~ao ou remo\c{c}\~ao de pontos e preserva\c{c}\~ao de restri\c{c}\~oes de fronteira;
+  \item exportar malhas em formato computacional pr\'oprio do ecossistema, al\'em de formatos de visualiza\c{c}\~ao e interoperabilidade.
+\end{itemize}
+
+\subsection{Responsabilidades do Mohid-NG}
+
+O Mohid-NG deve ser respons\'avel por:
+\begin{itemize}
+  \item ler a malha computacional gerada pelo VoronoiMeshMaker;
+  \item verificar consist\^encia m\'inima antes da simula\c{c}\~ao;
+  \item manter estados de geometria, campos, parti\c{c}\~ao paralela, fronteiras e for\c{c}antes;
+  \item resolver equa\c{c}\~oes f\'isicas em volumes finitos sobre entidades Voronoi;
+  \item solicitar remeshing ou redistribui\c{c}\~ao ao VoronoiMeshMaker quando indicadores num\'ericos ou f\'isicos exigirem;
+  \item transferir campos entre malhas de forma conservativa;
+  \item reconstruir operadores, gradientes, matrizes, precondicionadores e parti\c{c}\~oes paralelas ap\'os altera\c{c}\~oes de malha.
+\end{itemize}
+
+\section{Dimensionalidade e tipos de malha Voronoi}
+
+Toda malha computacional do Mohid-NG deve obedecer ao contrato Voronoi definido em conjunto com o VoronoiMeshMaker. Ainda assim, \'e necess\'ario distinguir tr\^es classes:
+
+\begin{longtable}{p{0.22\textwidth}p{0.28\textwidth}p{0.40\textwidth}}
+\toprule
+\textbf{Classe} & \textbf{Entidades principais} & \textbf{Uso priorit\'ario}\tabularnewline
+\midrule
+Voronoi 2D & C\'elulas poligonais, arestas, n\'os, patches de fronteira & Transporte 2D, \`agua rasa, valida\c{c}\~ao inicial, wetting and drying inicial, casos did\'aticos e benchmarks.\tabularnewline
+\addlinespace
+Voronoi 3D columnar & Malha Voronoi horizontal com colunas e camadas verticais & Principal caminho para equival\^encia com modelos 3D do MOHID, incluindo superf\'icie livre, sigma layers, sedimentos de fundo, salinidade, temperatura e qualidade da \`agua.\tabularnewline
+\addlinespace
+Voronoi 3D poli\'edrico & C\'elulas Voronoi poli\'edricas gerais, faces poligonais, arestas e n\'os & Capacidade avan\c{c}ada para dom\'inios 3D gerais, menos ligada \`a estrutura cl\'assica de coluna d'\'agua.\tabularnewline
+\bottomrule
+\end{longtable}
+
+A formula\c{c}\~ao columnar deve preservar a separa\c{c}\~ao entre fluxos horizontais e verticais. Para uma quantidade \(\phi\), uma forma discreta t\'ipica \'e:
+\[
+\dv{}{t}(V_{P,k}\phi_{P,k})
++
+\sum_{f\in\partial P} F_{f,k}A_{f,k}
++
+F_{P,k+1/2}A_{P,k+1/2}
+-
+F_{P,k-1/2}A_{P,k-1/2}
+=
+V_{P,k}S_{P,k}.
+\]
+
+\section{Arquitetura num\'erica}
+
+\subsection{Forma conservativa}
+
+A unidade discreta fundamental \'e o volume de controle Voronoi. Para uma vari\'avel conservada \(q\), a estrutura geral \'e:
+\[
+\dv{}{t}\int_{V_P(t)}q\,\dd V
++
+\int_{\partial V_P(t)} q(\vb{u}-\vb{w})\vdot\vb{n}\,\dd A
+=
+\int_{V_P(t)}S_q\,\dd V,
+\]
+onde \(\vb{w}\) \'e a velocidade da malha ou da fronteira. Para dom\'inios fixos, \(\vb{w}=\vb{0}\). Para dom\'inios m\'oveis ou ALE, esse termo deve existir conceitualmente desde o in\'icio.
+
+\subsection{Gradientes como servi\c{c}o central}
+
+O c\'alculo de gradientes n\~ao deve ser detalhe interno de cada modelo. Ele deve ser servi\c{c}o num\'erico central porque aparece em:
+\begin{itemize}
+  \item difus\~ao, viscosidade, turbul\^encia, press\~ao, sedimentos e transporte;
+  \item reconstru\c{c}\~ao de valores em faces;
+  \item indicadores de adapta\c{c}\~ao de malha;
+  \item estimativas de erro e diagn\'osticos de qualidade.
+\end{itemize}
+
+Fam\'ilias de operadores a prever:
+\begin{itemize}
+  \item Green-Gauss conservativo por faces;
+  \item least squares;
+  \item weighted least squares com pesos por dist\^ancia;
+  \item QR ou SVD local em casos mal condicionados;
+  \item gradientes limitados para transporte advectivo e campos com frentes.
+\end{itemize}
+
+\subsection{Remeshing e transfer\^encia conservativa}
+
+Quando a malha muda, a quantidade conservada n\~ao deve ser a concentra\c{c}\~ao isolada, mas a massa ou integral no volume. Para um campo cell-centred \(\phi\), a transfer\^encia de refer\^encia deve satisfazer:
+\[
+\sum_{Q\in\mathcal{M}_{\mathrm{new}}}\phi_Q^{\mathrm{new}}V_Q^{\mathrm{new}}
+=
+\sum_{P\in\mathcal{M}_{\mathrm{old}}}\phi_P^{\mathrm{old}}V_P^{\mathrm{old}}.
+\]
+Uma forma conservativa baseada em intersec\c{c}\~oes \'e:
+\[
+\phi_Q^{\mathrm{new}}
+=
+\frac{1}{V_Q^{\mathrm{new}}}
+\sum_P \phi_P^{\mathrm{old}}\left|V_P^{\mathrm{old}}\cap V_Q^{\mathrm{new}}\right|.
+\]
+O VoronoiMeshMaker deve gerar a nova malha. O Mohid-NG deve controlar a decis\~ao de adapta\c{c}\~ao, transferir os campos e auditar conserva\c{c}\~ao.
+
+\section{Dom\'inio m\'ovel, free-surface e free-boundary}
+
+O Mohid-NG deve prever quatro n\'iveis:
+\begin{enumerate}
+  \item superf\'icie livre hidrodin\^amica, com eleva\c{c}\~ao \(\eta(\vb{x},t)\), volumes verticais vari\'aveis e geometria columnar dependente do tempo;
+  \item wetting and drying, com c\'elulas e faces activas ou inactivas sobre malha Voronoi;
+  \item dom\'inio m\'ovel com fronteira expl\'icita, incluindo ALE, remeshing e transfer\^encia conservativa;
+  \item free-boundary ou interface-capturing geral, por exemplo VOF, level-set ou phase-field, como capacidade avan\c{c}ada.
+\end{enumerate}
+
+A arquitetura deve separar:
+\[
+\text{topologia da malha},\quad
+\text{geometria de refer\^encia},\quad
+\text{geometria atual},\quad
+\text{estado wet/dry},\quad
+\text{campos f\'isicos}.
+\]
+
+Tamb\'em deve existir diagn\'ostico de geometric conservation law:
+\[
+\dv{V_P}{t}-\sum_{f\in\partial P}\vb{w}_f\vdot\vb{n}_fA_f=0.
+\]
+
+\section{Particionamento, paralelismo e balanceamento}
+
+O Mohid-NG deve tratar particionamento como problema ponderado. Cada c\'elula pode ter custo diferente em fun\c{c}\~ao de:
+\begin{itemize}
+  \item n\'umero de faces e camadas;
+  \item estado wet/dry;
+  \item n\'umero de part\'iculas;
+  \item modelos f\'isicos ativos;
+  \item custo de qu\'imica, sedimentos ou reac\c{c}\~oes locais;
+  \item custo de montagem e solver.
+\end{itemize}
+
+A representa\c{c}\~ao natural \'e um grafo ou hipergrafo ponderado. Zoltan deve ser considerado backend principal para balanceamento din\^amico e migra\c{c}\~ao em simula\c{c}\~oes adaptativas.\footnote{Zoltan, Sandia National Laboratories, \url{https://sandialabs.github.io/Zoltan/}.} PETSc DMPlex deve ser suportado quando PETSc for selecionado como backend.\footnote{PETSc DMPlex, \url{https://petsc.org/release/manual/dmplex/}.} Zoltan2, ParMETIS, METIS e PT-Scotch devem permanecer backends opcionais, respeitando maturidade, instala\c{c}\~ao e licen\c{c}as.
+
+\section{Solvers e acelera\c{c}\~ao}
+
+\subsection{Backends}
+
+O Mohid-NG deve definir seus pr\'oprios conceitos de sistema linear, sistema n\~ao linear, matriz, vetor, precondicionador, integrador temporal e op\c{c}\~oes de solver. PETSc e Trilinos devem ser adaptadores, n\~ao a arquitetura interna.
+
+\subsection{Estrat\'egias de acelera\c{c}\~ao}
+
+A camada de solver deve prever:
+\begin{itemize}
+  \item AMG como primeira estrat\'egia multigrid operacional, via PETSc GAMG e hypre BoomerAMG;
+  \item GMG Voronoi como capacidade avan\c{c}ada, baseada em hierarquias de malhas e transfer\^encia conservativa;
+  \item block preconditioners por campo f\'isico;
+  \item Schur complement aproximado para sistemas acoplados;
+  \item smoothers verticais para modelos 3D columnar;
+  \item domain decomposition, ASM, block Jacobi e ILU local;
+  \item matrix-free kernels quando a matriz completa for custosa;
+  \item reutiliza\c{c}\~ao de matriz e precondicionador com pol\'iticas de reconstru\c{c}\~ao.
+\end{itemize}
+
+O multigrid alg\'ebrico deve vir antes do multigrid geom\'etrico. O multigrid geom\'etrico em Voronoi exige hierarquia de malhas, restri\c{c}\~ao, prolonga\c{c}\~ao e valida\c{c}\~ao dos operadores grosseiros.
+
+\section{GIS e problemas 3D reais}
+
+GIS deve ser tratado como camada de entrada, contexto, georreferenciamento, fronteiras, atributos e produtos derivados. O solver deve operar em coordenadas m\'etricas projetadas, n\~ao diretamente em latitude e longitude. O PROJ \'e a biblioteca padr\~ao para transforma\c{c}\~oes cartogr\'aficas.\footnote{PROJ, \url{https://proj.org/}.}
+
+O VoronoiMeshMaker deve importar camadas GIS e propagar seus atributos para patches, regi\~oes, zonas de refinamento e for\c{c}antes. Formatos recomendados:
+\begin{itemize}
+  \item GeoPackage e PostGIS para vetores e atributos;
+  \item GeoTIFF e NetCDF georreferenciado para rasters;
+  \item VTU/XDMF/HDF5/NetCDF para resultados cient\'ificos 3D;
+  \item shapefile apenas como compatibilidade legada.
+\end{itemize}
+
+O MOHID cl\'assico usa GIS principalmente em workflow, prepara\c{c}\~ao, interc\^ambio e visualiza\c{c}\~ao, por exemplo via MOHID Studio, que declara interc\^ambio com ESRI Shapefiles e KML.\footnote{MOHID Studio, \url{https://www.mohid.com/pages/userinterfaces/mohidstudio.shtml}.} O Mohid-NG deve manter essa compatibilidade operacional, mas transformar dados GIS diretamente em malhas computacionais Voronoi.
+
+\section{Modelos e extensibilidade}
+
+\subsection{Dificuldade esperada para novos modelos}
+
+\begin{longtable}{p{0.30\textwidth}p{0.18\textwidth}p{0.42\textwidth}}
+\toprule
+\textbf{Tipo de extens\~ao} & \textbf{Dificuldade} & \textbf{Observa\c{c}\~ao}\tabularnewline
+\midrule
+Novo termo local & Baixa & Exige campos, par\^ametros, unidades e fun\c{c}\~ao fonte. N\~ao deve exigir contato com malha, PETSc ou Trilinos.\tabularnewline
+Novo escalar transportado & Baixa a m\'edia & Reutiliza transporte conservativo, fronteiras, difus\~ao, advec\c{c}\~ao e diagn\'osticos.\tabularnewline
+Novo modelo acoplado & M\'edia & Pode exigir depend\^encias entre campos, fontes locais e operadores existentes.\tabularnewline
+Nova equa\c{c}\~ao conservativa & M\'edia a alta & Exige res\'iduo, fluxos, condi\c{c}\~oes de fronteira e valida\c{c}\~ao pr\'opria.\tabularnewline
+Novo esquema num\'erico & Alta & Entra no n\'ucleo num\'erico, exige testes de converg\^encia, conserva\c{c}\~ao e desempenho.\tabularnewline
+Novo backend de solver & Muito alta & Trabalho de desenvolvedor interno, n\~ao de usu\'ario comum.\tabularnewline
+\bottomrule
+\end{longtable}
+
+A meta deve ser que a maior parte dos novos modelos de pesquisa caiba nos tr\^es primeiros n\'iveis. Para isso, o Mohid-NG deve oferecer contratos simples de modelo, registro controlado, templates de modelo, exemplos e testes m\'inimos.
+
+\subsection{Cat\'alogo matem\'atico}
+
+Cada modelo oficial deve possuir uma ficha com:
+\begin{itemize}
+  \item equa\c{c}\~ao cont\'inua;
+  \item forma conservativa;
+  \item vari\'aveis progn\'osticas e diagn\'osticas;
+  \item par\^ametros, unidades e limites;
+  \item termos fonte e sumidouro;
+  \item condi\c{c}\~oes iniciais e de fronteira;
+  \item discretiza\c{c}\~ao em Voronoi;
+  \item testes de valida\c{c}\~ao;
+  \item rela\c{c}\~ao com o modelo correspondente do MOHID cl\'assico.
+\end{itemize}
+
+\section{Usabilidade}
+
+A complexidade interna n\~ao deve aparecer para o usu\'ario operacional. Devem existir tr\^es n\'iveis de uso:
+\begin{enumerate}
+  \item usu\'ario operacional, que roda casos por arquivos declarativos;
+  \item programador comum, que usa API simples de C++ ou Python sem templates expl\'icitos;
+  \item desenvolvedor interno, que escreve kernels, backends, operators, traits e policies.
+\end{enumerate}
+
+A interface principal deve ser baseada em casos, com esquema est\'avel para malha, modelos, par\^ametros, fronteiras, for\c{c}antes, solvers, outputs, restart e diagn\'osticos.
+
+
+\section{Erros, exce\c{c}\~oes e rastreio de fluxo}
+
+\begin{decisionbox}{Subsistema pr\'oprio de diagn\'ostico}
+O Mohid-NG deve possuir o seu pr\'oprio sistema de erros, exce\c{c}\~oes e logger de rastreio de fluxo. Esse sistema deve ser independente de bibliotecas externas, n\~ao deve usar \texttt{enum} para c\'odigos de erro, deve ser tril\'ingue e deve emitir mensagens na l\'ingua selecionada. A l\'ingua padr\~ao ser\'a portugu\^es do Brasil.
+\end{decisionbox}
+
+O sistema deve separar rigorosamente tr\^es conceitos:
+\begin{itemize}
+  \item \textbf{Error}: valor registado que descreve um problema, com c\'odigo textual flex\'ivel, mensagens localizadas e detalhe opcional;
+  \item \textbf{Exception}: mecanismo de interrup\c{c}\~ao que transporta um \texttt{Error} e o contexto de diagn\'ostico capturado no ponto de lan\c{c}amento;
+  \item \textbf{Logger/Trace}: mecanismo de acompanhamento do fluxo do programa, usado para saber por onde a execu\c{c}\~ao passou at\'e ocorrer um erro ou uma exce\c{c}\~ao.
+\end{itemize}
+
+A separa\c{c}\~ao \texttt{Error}/\texttt{Exception} \`e obrigat\'oria. Um erro pode existir como valor registado, pode ser reportado, acumulado ou diagnosticado, sem necessariamente produzir uma exce\c{c}\~ao. A exce\c{c}\~ao \`e apenas uma das formas de propagar o erro.
+
+\subsection{C\'odigos de erro flex\'iveis}
+
+O Mohid-NG n\~ao deve usar enumera\c{c}\~oes para c\'odigos de erro. C\'odigos devem ser strings hier\'arquicas, por exemplo:
+\begin{lstlisting}[style=tree]
+mesh.file_not_found
+mesh.invalid_connectivity
+field.invalid_size
+numerics.singular_least_squares
+io.invalid_case_file
+solver.convergence_failure
+\end{lstlisting}
+
+Essa decis\~ao evita que cada novo m\'odulo precise alterar uma enumera\c{c}\~ao central. O cat\'alogo de erros deve aceitar registo por m\'odulo, preservando extensibilidade para modelos oficiais, modelos experimentais e modelos de utilizador.
+
+\subsection{Mensagens tril\'ingues}
+
+O sistema deve suportar pelo menos tr\^es chaves de idioma:
+\begin{longtable}{p{0.20\textwidth}p{0.70\textwidth}}
+\toprule
+\textbf{Chave} & \textbf{L\'ingua}\\
+\midrule
+\texttt{pt-br} & Portugu\^es do Brasil, idioma padr\~ao do sistema.\\
+\texttt{pt-pt} & Portugu\^es de Portugal.\\
+\texttt{en-gb} & Ingl\^es brit\^anico.\\
+\bottomrule
+\end{longtable}
+
+Quando uma l\'ingua n\~ao suportada for solicitada, o sistema deve retornar para \texttt{pt-br}. Mensagens oficiais devem existir nos tr\^es idiomas. Mensagens de desenvolvimento ainda n\~ao traduzidas devem ser tratadas como d\'ebito t\'ecnico.
+
+\subsection{Rastreio do fluxo em modo de desenvolvimento}
+
+O logger de fluxo deve ser baseado em escopos, preferencialmente por RAII, de modo que fun\c{c}\~oes relevantes registem automaticamente entrada e sa\'ida durante execu\c{c}\~ao de desenvolvimento. Em caso de exce\c{c}\~ao, o objeto de exce\c{c}\~ao deve capturar o rasto activo no ponto de lan\c{c}amento.
+
+Esse mecanismo deve ser usado em:
+\begin{itemize}
+  \item fronteiras de API p\'ublica;
+  \item leitura e valida\c{c}\~ao de malhas;
+  \item acesso a campos;
+  \item operadores num\'ericos, incluindo gradientes, fluxos, diverg\^encia e montagem de sistemas;
+  \item adaptadores de solver;
+  \item I/O, restart e escrita de resultados;
+  \item etapas de remapeamento conservativo ap\'os altera\c{c}\~ao de malha.
+\end{itemize}
+
+Em compila\c{c}\~ao Release, esse rastreio deve ser desligado. A implementa\c{c}\~ao deve permitir que o mecanismo seja compilado como \textit{no-op}, por exemplo quando \texttt{NDEBUG} estiver definido, de modo a n\~ao introduzir custo de execu\c{c}\~ao em simula\c{c}\~oes de produ\c{c}\~ao.
+
+\subsection{Requisitos espec\'ificos}
+
+\begin{longtable}{p{0.24\textwidth}p{0.68\textwidth}}
+\toprule
+\textbf{Requisito} & \textbf{Descri\c{c}\~ao}\\
+\midrule
+REQ-DIAG-001 & O Mohid-NG deve possuir um subsistema pr\'oprio de erros, exce\c{c}\~oes e rastreio de fluxo.\\
+\addlinespace
+REQ-DIAG-002 & \texttt{Error} e \texttt{Exception} devem ser conceitos separados. Erros s\~ao valores regist\'aveis; exce\c{c}\~oes s\~ao mecanismos de interrup\c{c}\~ao.\\
+\addlinespace
+REQ-DIAG-003 & C\'odigos de erro n\~ao devem usar \texttt{enum}. Devem ser identificadores textuais flex\'iveis e hier\'arquicos.\\
+\addlinespace
+REQ-DIAG-004 & O cat\'alogo de erros deve suportar mensagens em \texttt{pt-br}, \texttt{pt-pt} e \texttt{en-gb}.\\
+\addlinespace
+REQ-DIAG-005 & A l\'ingua padr\~ao das mensagens deve ser \texttt{pt-br}.\\
+\addlinespace
+REQ-DIAG-006 & Exce\c{c}\~oes devem transportar o erro associado e, em compila\c{c}\~oes de desenvolvimento, o rasto do fluxo at\'e o ponto de lan\c{c}amento.\\
+\addlinespace
+REQ-DIAG-007 & O logger de fluxo deve poder acompanhar entrada e sa\'ida de escopos relevantes durante execu\c{c}\~ao de desenvolvimento.\\
+\addlinespace
+REQ-DIAG-008 & O mecanismo de rastreio deve ser desligado em compila\c{c}\~ao Release e n\~ao deve impor custo relevante nos la\c{c}os num\'ericos de produ\c{c}\~ao.\\
+\bottomrule
+\end{longtable}
+
+\section{Estrutura de reposit\'orio proposta}
+
+A estrutura abaixo separa o n\'ucleo do Mohid-NG dos modelos, dos casos, dos testes e da integra\c{c}\~ao com o VoronoiMeshMaker. Implementa\c{c}\~oes de gera\c{c}\~ao e adapta\c{c}\~ao de malha ficam fora, no VoronoiMeshMaker. O Mohid-NG mant\'em leitores, adaptadores, estado geom\'etrico e contratos de uso da malha.
+
+\begin{lstlisting}[style=tree]
+mohid-ng/
+  CMakeLists.txt
+  CMakePresets.json
+  README.md
+  docs/
+    user-guide/
+    modeller-guide/
+    developer-guide/
+    equations/
+    architecture/
+    validation/
+  apps/
+    mohid-ng-run/
+    mohid-ng-check-case/
+    mohid-ng-check-mesh/
+    mohid-ng-post/
+    mohid-ng-compare/
+  include/MohidNG/
+    Core/
+      Types.hpp
+      StrongIndex.hpp
+      Error.hpp
+      Logger.hpp
+      Units.hpp
+      Metadata.hpp
+      Config.hpp
+    MeshInterface/
+      MeshView.hpp
+      MeshTopologyView.hpp
+      MeshGeometryView.hpp
+      BoundaryPatchView.hpp
+      MeshState.hpp
+      GeometryState.hpp
+      PartitionState.hpp
+      VoronoiMeshMakerReader.hpp
+      VoronoiMeshMakerAdapter.hpp
+    Fields/
+      Field.hpp
+      FieldSet.hpp
+      CellField.hpp
+      FaceField.hpp
+      LayerField.hpp
+      ParticleField.hpp
+      FieldRegistry.hpp
+    Numerics/
+      Gradient/
+      Divergence/
+      Reconstruction/
+      Fluxes/
+      Limiters/
+      Assembly/
+      Time/
+      ConservationAudit.hpp
+      RemapConservative.hpp
+    Solvers/
+      LinearSystem.hpp
+      NonlinearSystem.hpp
+      SolverOptions.hpp
+      NativeBackend.hpp
+      PetscBackend.hpp
+      TrilinosBackend.hpp
+      MultigridOptions.hpp
+      PreconditionerOptions.hpp
+    Partition/
+      PartitionGraph.hpp
+      WorkloadWeights.hpp
+      ZoltanBackend.hpp
+      PetscDMPlexBackend.hpp
+      TrilinosZoltan2Backend.hpp
+      MigrationPlan.hpp
+    ModelAPI/
+      ModelConcept.hpp
+      ModelDescriptor.hpp
+      ModelRegistry.hpp
+      ModelFactory.hpp
+      ModelParameters.hpp
+      ModelDiagnostics.hpp
+    Physics/
+      Hydrodynamics/
+      Transport/
+      WaterQuality/
+      Sediments/
+      Lagrangian/
+      LandRiver/
+      BoundaryForcing/
+      Coupling/
+    IO/
+      CaseReader.hpp
+      CaseSchema.hpp
+      Hdf5Writer.hpp
+      NetcdfWriter.hpp
+      VtuWriter.hpp
+      XdmfWriter.hpp
+      RestartFile.hpp
+      TimeSeriesReader.hpp
+      GisMetadata.hpp
+    Legacy/
+      MohidClassicReader.hpp
+      MohidClassicConverter.hpp
+      MohidComparison.hpp
+    Pipeline/
+      SimulationPipeline.hpp
+      PipelineFactory.hpp
+      RuntimeSelection.hpp
+      RunContext.hpp
+  src/MohidNG/
+    Core/
+    MeshInterface/
+    Fields/
+    Numerics/
+    Solvers/
+    Partition/
+    ModelAPI/
+    Physics/
+    IO/
+    Legacy/
+    Pipeline/
+  models/
+    official/
+    experimental/
+    user/
+    registry/
+  cases/
+    tutorials/
+    validation/
+    benchmarks/
+  tests/
+    unit/
+    integration/
+    regression/
+    conservation/
+    mesh-interface/
+    performance/
+  tools/
+    case/
+    post/
+    legacy/
+  scripts/
+    configure_petsc.sh
+    configure_trilinos.sh
+    run_validation_suite.sh
+    generate_model_template.py
+\end{lstlisting}
+
+
+\section{Plano sequencial por blocos}
+
+O cronograma abaixo n\~ao usa datas. Ele organiza o desenvolvimento por blocos de maturidade. Cada bloco tem uma raz\~ao t\'ecnica, um conjunto de entreg\'aveis, testes obrigat\'orios, exemplos m\'inimos e crit\'erios objetivos para avan\c{c}ar. A regra de gest\~ao \`e: o projeto s\'o passa ao bloco seguinte quando o bloco atual produz evid\^encia execut\'avel, testada e documentada.
+
+\begin{warningbox}{Regra de sequenciamento}
+N\~ao antecipar hidrodin\^amica, 3D, remeshing ou solvers avan\c{c}ados antes de estabilizar leitura de malha, campos, operadores geom\'etricos, testes de conserva\c{c}\~ao, exemplos e documenta\c{c}\~ao. A arquitetura pode prever capacidades futuras, mas o c\'odigo deve amadurecer por evid\^encia.
+\end{warningbox}
+
+\subsection*{Bloco 0, funda\c{c}\~ao documental e decis\~oes irrevers\'iveis}
+
+\textbf{Raz\~ao.} O projeto precisa come\c{c}ar com fronteiras claras. Sem este bloco, o Mohid-NG corre o risco de misturar solver, gerador de malha, GIS, visualiza\c{c}\~ao, GUI, depend\^encias externas e modelos f\'isicos antes de haver um contrato interno est\'avel.
+
+\textbf{Objetivo.} Fixar escopo, linguagem arquitetural, responsabilidades do Mohid-NG, responsabilidades do VoronoiMeshMaker, pol\'itica de depend\^encias, identidade institucional, idiomas, estilo de c\'odigo e estrutura inicial de documenta\c{c}\~ao.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item decidir licen\c{c}a do reposit\'orio antes do primeiro release p\'ublico;
+  \item fixar C++20 ou C++23 como padr\~ao m\'inimo;
+  \item fixar CMake como sistema de build;
+  \item fixar Google C++ Style como base de formata\c{c}\~ao;
+  \item definir que o namespace ser\'a \texttt{mohidng} ou outro escolhido de forma definitiva;
+  \item criar documentos de arquitetura, coding standard, implementation architecture e design system da documenta\c{c}\~ao;
+  \item registrar UERJ/IPRJ como institui\c{c}\~ao participante inicial;
+  \item registrar contato e GitHub do projeto.
+\end{itemize}
+
+\textbf{Testes e exemplos.} Nenhum solver ainda. Devem existir exemplos textuais de arquivo de caso, ficha de modelo, ficha de erro tril\'ingue e ficha de contrato de malha.
+
+\textbf{Condi\c{c}\~ao de passagem.} O projeto deve conseguir responder, sem ambiguidade, o que pertence ao Mohid-NG, o que pertence ao VoronoiMeshMaker, quais depend\^encias podem entrar no core, quais devem ser opcionais e como um caso m\'inimo ser\'a descrito.
+
+\subsection*{Bloco 1, reposit\'orio compil\'avel e infraestrutura do core}
+
+\textbf{Raz\~ao.} Um projeto cient\'ifico grande deve nascer compil\'avel, test\'avel e verific\'avel. Mesmo que a f\'isica ainda seja m\'inima, CI, CMake, testes e formata\c{c}\~ao precisam existir desde o primeiro ciclo para evitar degrada\c{c}\~ao estrutural.
+
+\textbf{Objetivo.} Criar o esqueleto do reposit\'orio e um execut\'avel m\'inimo que valide a estrutura de build, testes, exemplos, documenta\c{c}\~ao e empacotamento.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item \texttt{CMakeLists.txt}, \texttt{CMakePresets.json}, \texttt{.clang-format}, \texttt{.clang-tidy} e \texttt{.editorconfig};
+  \item diret\'orios \texttt{include/}, \texttt{src/}, \texttt{examples/}, \texttt{tests/}, \texttt{docs/} e \texttt{.github/workflows/};
+  \item tipos b\'asicos, \`indices fortes para c\'elulas/faces/n\'os e pequenas views n\~ao propriet\'arias;
+  \item subsistemas separados de \texttt{Error}, \texttt{Exception} e \texttt{Logger/Trace};
+  \item idioma padr\~ao \texttt{pt-br}, com mensagens tamb\'em em \texttt{pt-pt} e \texttt{en-gb};
+  \item logger RAII ativo em Debug e no-op em Release;
+  \item CI com build Debug, build Release, testes e verifica\c{c}\~ao de formata\c{c}\~ao.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item teste de c\'odigos de erro textuais, sem \texttt{enum};
+  \item teste de fallback de idioma para \texttt{pt-br};
+  \item teste de exce\c{c}\~ao carregando erro e rastro de fluxo;
+  \item teste de que o trace \`e removido ou inativado em Release;
+  \item exemplo \texttt{Ex01\_HelloCore} imprimindo vers\~ao, idioma e um erro controlado.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} O reposit\'orio deve configurar, compilar e testar em Debug e Release. Uma exce\c{c}\~ao provocada em Debug deve mostrar mensagem localizada e rastro de fluxo. Em Release, o mesmo c\'odigo n\~ao deve carregar custo de trace de desenvolvimento.
+
+\subsection*{Bloco 2, contrato de malha Voronoi e leitor provis\'orio}
+
+\textbf{Raz\~ao.} O Mohid-NG n\~ao gera malha. Portanto, o primeiro passo num\'erico n\~ao \`e resolver uma equa\c{c}\~ao, mas provar que o solver consegue consumir uma malha Voronoi validada por contrato.
+
+\textbf{Objetivo.} Definir e implementar uma primeira vers\~ao do contrato de malha recebido do VoronoiMeshMaker, usando um formato provis\'orio simples para bootstrap e preparando a transi\c{c}\~ao para HDF5.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item \texttt{MeshView}, \texttt{MeshTopologyView}, \texttt{MeshGeometryView} e \texttt{BoundaryPatch};
+  \item leitor provis\'orio de malha pequena para testes iniciais;
+  \item especifica\c{c}\~ao textual do futuro \emph{Voronoi mesh package};
+  \item valida\c{c}\~ao de c\'elulas, faces, centros, \`areas, volumes, normais, conectividade rec\'iproca e patches;
+  \item relat\'orio de qualidade m\'inimo;
+  \item garantia de que nenhum tipo CGAL aparece no Mohid-NG.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item malha quadrada 2D pequena, manual ou exportada pelo VMM;
+  \item teste de contagem de c\'elulas, faces e patches;
+  \item teste de normais orientadas;
+  \item teste de erro para conectividade quebrada;
+  \item exemplo \texttt{Ex02\_ReadVoronoiMesh}.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} O Mohid-NG deve ler uma malha Voronoi, validar sua consist\^encia, produzir relat\'orio de qualidade e falhar com erro cadastrado e mensagem tril\'ingue quando a malha estiver inconsistente.
+
+\subsection*{Bloco 3, campos e estado discreto}
+
+\textbf{Raz\~ao.} Antes de operadores num\'ericos, o projeto precisa representar campos corretamente. Erros de tamanho, localiza\c{c}\~ao, unidades ou associa\c{c}\~ao com entidades da malha comprometem qualquer modelo futuro.
+
+\textbf{Objetivo.} Implementar campos cell-centred, face-centred e metadados de campo, ainda em malha fixa 2D.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item \texttt{CellField}, \texttt{FaceField} e \texttt{FieldSet};
+  \item associa\c{c}\~ao entre campo, unidade, localiza\c{c}\~ao e nome f\'isico;
+  \item valida\c{c}\~ao de tamanho contra a malha;
+  \item opera\c{c}\~oes b\'asicas de inicializa\c{c}\~ao, preenchimento, acesso e estat\'isticas;
+  \item prepara\c{c}\~ao para sa\'ida visualiz\'avel.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item teste de campo com tamanho correto e incorreto;
+  \item teste de inicializa\c{c}\~ao constante;
+  \item teste de estat\'isticas de m\'inimo, m\'aximo e m\'edia ponderada por volume;
+  \item exemplo \texttt{Ex03\_CellField}.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} Campos devem ser criados, validados e associados \`a malha sem ambiguidade. Qualquer incompatibilidade de tamanho ou localiza\c{c}\~ao deve gerar erro cadastrado.
+
+\subsection*{Bloco 4, operadores geom\'etricos e gradientes 2D}
+
+\textbf{Raz\~ao.} Gradientes ser\~ao usados por discretiza\c{c}\~ao f\'isica, reconstru\c{c}\~ao de faces, indicadores de adapta\c{c}\~ao de malha e diagn\'osticos. Eles precisam ser servi\c{c}o central, testado antes de modelos f\'isicos completos.
+
+\textbf{Objetivo.} Implementar gradientes e operadores locais em malha Voronoi fixa, com \^enfase em robustez geom\'etrica.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item Green-Gauss b\'asico;
+  \item least squares e weighted least squares;
+  \item QR local quando a depend\^encia escolhida estiver dispon\'ivel;
+  \item interpola\c{c}\~ao de face;
+  \item diverg\^encia conservativa por faces;
+  \item diagn\'ostico de condicionamento local;
+  \item prepara\c{c}\~ao para VTK como backend opcional de inspe\c{c}\~ao.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item campo constante com gradiente zero;
+  \item campo linear com gradiente exato dentro de toler\^ancia;
+  \item compara\c{c}\~ao entre Green-Gauss, LS e WLS;
+  \item teste de diverg\^encia para fluxo uniforme;
+  \item exemplo \texttt{Ex04\_GradientReconstruction}.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} Operadores devem reproduzir campos constantes e lineares em malhas simples, reportar condicionamento local e fechar balan\c{c}os conservativos elementares.
+
+\subsection*{Bloco 5, exporta\c{c}\~ao cient\'ifica e inspe\c{c}\~ao visual}
+
+\textbf{Raz\~ao.} O desenvolvimento num\'erico precisa de inspe\c{c}\~ao visual desde cedo. Sem sa\'ida para ParaView ou formato equivalente, erros de conectividade, normais, patches, campos e gradientes tornam-se dif\'iceis de diagnosticar.
+
+\textbf{Objetivo.} Introduzir VTK como backend opcional de exporta\c{c}\~ao, sem tornar VTK depend\^encia obrigat\'oria do core.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item op\c{c}\~ao CMake \texttt{MOHIDNG\_ENABLE\_VTK};
+  \item exporta\c{c}\~ao \texttt{.vtu} ou alternativa ParaView-readable;
+  \item escrita de campos por c\'elula;
+  \item escrita de identificadores de patch e m\'etricas de qualidade;
+  \item exemplo de visualiza\c{c}\~ao documentado;
+  \item build funcional com VTK desligado e, quando instalado, com VTK ligado.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item teste de build sem VTK;
+  \item teste de exporta\c{c}\~ao quando VTK estiver habilitado;
+  \item exemplo \texttt{Ex05\_WriteVtu};
+  \item imagem de refer\^encia opcional para a documenta\c{c}\~ao.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} Uma malha com campo escalar e patches deve abrir corretamente no ParaView, enquanto o core continua compilando em ambiente sem VTK.
+
+\subsection*{Bloco 6, primeiro problema f\'isico: transporte escalar 2D}
+
+\textbf{Raz\~ao.} O transporte escalar \`e o primeiro teste real da arquitetura. Ele usa malha, campos, fronteiras, gradientes, fluxos, integra\c{c}\~ao temporal, conserva\c{c}\~ao e sa\'ida sem exigir ainda hidrodin\^amica completa.
+
+\textbf{Objetivo.} Resolver uma equa\c{c}\~ao advectivo-difusiva 2D simples em malha Voronoi fixa.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item transporte expl\'icito inicial;
+  \item difus\~ao com gradientes testados;
+  \item fontes volum\'etricas;
+  \item fronteiras Dirichlet, Neumann e fluxo prescrito;
+  \item loop temporal simples;
+  \item auditoria de conserva\c{c}\~ao;
+  \item arquivo de caso YAML ou formato escolhido.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item caixa fechada com massa conservada;
+  \item difus\~ao com solu\c{c}\~ao anal\'itica simples;
+  \item tra\c{c}ador passivo com velocidade prescrita;
+  \item exemplo \texttt{Ex06\_ScalarTransport2D}.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} O caso deve executar at\'e o tempo final, conservar massa dentro de toler\^ancia definida, produzir diagn\'ostico de conserva\c{c}\~ao e gerar sa\'ida visualiz\'avel.
+
+\subsection*{Bloco 7, formato de malha definitivo e I/O cient\'ifico}
+
+\textbf{Raz\~ao.} O formato provis\'orio serve apenas para arranque. Para simula\c{c}\~oes reais, o contrato entre VoronoiMeshMaker e Mohid-NG precisa de HDF5 ou formato cient\'ifico equivalente, com metadados completos e suporte a grandes malhas.
+
+\textbf{Objetivo.} Definir e implementar o primeiro \emph{Voronoi mesh package} robusto.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item especifica\c{c}\~ao HDF5 do pacote de malha;
+  \item metadados de CRS, unidade, datum, dimens\~ao, patches e regi\~oes;
+  \item datasets para c\'elulas, faces, n\'os, conectividade, centros, normais, \`areas e volumes;
+  \item leitor de HDF5 no Mohid-NG;
+  \item escritor correspondente no VoronoiMeshMaker;
+  \item testes de compatibilidade entre VMM e Mohid-NG.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item round-trip VMM \(\rightarrow\) pacote HDF5 \(\rightarrow\) Mohid-NG;
+  \item compara\c{c}\~ao de contagens e somas geom\'etricas;
+  \item erro controlado para metadado ausente;
+  \item exemplo \texttt{Ex07\_ReadHdf5MeshPackage}.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} Uma malha gerada pelo VMM deve ser lida pelo Mohid-NG sem convers\~ao manual, com valida\c{c}\~ao geom\'etrica e metadados suficientes para rodar o transporte 2D.
+
+\subsection*{Bloco 8, solvers impl\'icitos e acelera\c{c}\~ao inicial}
+
+\textbf{Raz\~ao.} Modelos ambientais reais exigem estabilidade e efici\^encia. Difus\~ao impl\'icita, problemas el\'ipticos e acoplamentos futuros precisam de uma camada de solver sem contaminar os modelos f\'isicos com objetos de bibliotecas externas.
+
+\textbf{Objetivo.} Criar uma abstra\c{c}\~ao interna de sistema linear e ativar pelo menos um backend alg\'ebrico opcional.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item \texttt{LinearSystem}, \texttt{SolverOptions} e diagn\'osticos de solver;
+  \item montagem de difus\~ao impl\'icita;
+  \item backend nativo simples ou PETSc opcional;
+  \item precondicionadores b\'asicos;
+  \item registro de tempo de montagem, tempo de solu\c{c}\~ao e n\'umero de itera\c{c}\~oes;
+  \item pol\'itica de falha de solver com erro cadastrado.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item problema de Poisson ou difus\~ao impl\'icita com solu\c{c}\~ao conhecida;
+  \item teste de converg\^encia residual;
+  \item teste de falha controlada por op\c{c}\~oes inv\'alidas;
+  \item exemplo \texttt{Ex08\_ImplicitDiffusion}.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} O solver deve resolver um sistema conhecido, reportar diagn\'osticos e manter o backend externo isolado da API f\'isica.
+
+\subsection*{Bloco 9, API de usu\'ario, CLI e exemplos operacionais}
+
+\textbf{Raz\~ao.} O Mohid-NG n\~ao deve exigir que o usu\'ario seja especialista em C++ moderno. Antes de aumentar a f\'isica, o projeto precisa de interface operacional clara, arquivos de caso validados e exemplos execut\'aveis.
+
+\textbf{Objetivo.} Criar a primeira experi\^encia de usu\'ario: validar caso, validar malha, executar caso simples e p\'os-processar resultado.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item \texttt{mohid-ng-check-case};
+  \item \texttt{mohid-ng-check-mesh};
+  \item \texttt{mohid-ng-run};
+  \item esquema validado do arquivo de caso;
+  \item documenta\c{c}\~ao tril\'ingue dos primeiros exemplos;
+  \item mensagens de erro localizadas para erros de usu\'ario.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item exemplo de caso v\'alido;
+  \item exemplo de caso com erro de schema;
+  \item exemplo de malha com patch ausente;
+  \item tutorial \emph{first scalar transport case}.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} Um usu\'ario deve conseguir rodar um caso simples seguindo apenas a documenta\c{c}\~ao, sem editar c\'odigo C++.
+
+\subsection*{Bloco 10, hidrodin\^amica 2D inicial}
+
+\textbf{Raz\~ao.} A hidrodin\^amica 2D \`e a primeira aproxima\c{c}\~ao do objetivo MOHID. Ela exige conserva\c{c}\~ao, fronteiras, velocidade, eleva\c{c}\~ao, estabilidade e diagn\'osticos, mas ainda evita a complexidade vertical do 3D.
+
+\textbf{Objetivo.} Implementar um modelo hidrodin\^amico 2D inicial em malha Voronoi fixa.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item vari\'aveis de eleva\c{c}\~ao e velocidade ou descarga;
+  \item continuidade e momento em forma conservativa compat\'ivel com Voronoi;
+  \item fronteiras abertas, paredes e fontes de vaz\~ao simples;
+  \item atrito de fundo inicial;
+  \item diagn\'ostico de massa de \`agua;
+  \item acoplamento com transporte passivo.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item canal com escoamento prescrito;
+  \item bacia fechada com conserva\c{c}\~ao de volume;
+  \item onda rasa ou teste de propaga\c{c}\~ao simples;
+  \item exemplo \texttt{Ex10\_ShallowWater2D}.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} O modelo deve conservar volume em casos fechados, tratar fronteiras simples e alimentar o transporte passivo com campo de velocidade consistente.
+
+\subsection*{Bloco 11, 3D columnar sobre contrato Voronoi}
+
+\textbf{Raz\~ao.} A maior proximidade com o MOHID cl\'assico vir\'a do 3D columnar. Este bloco deve introduzir camadas verticais sem abandonar o contrato Voronoi e sem mover a gera\c{c}\~ao de malha para o Mohid-NG.
+
+\textbf{Objetivo.} Representar colunas, camadas, volumes verticais e campos 3D sobre uma malha Voronoi horizontal fornecida pelo VMM.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item \texttt{LayerField} e \texttt{ColumnView};
+  \item volumes por camada;
+  \item faces horizontais e verticais;
+  \item condi\c{c}\~oes de topo e fundo;
+  \item transporte vertical simples;
+  \item sa\'ida 3D visualiz\'avel.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item coluna vertical isolada;
+  \item difus\~ao vertical com solu\c{c}\~ao simples;
+  \item transporte 3D sem velocidade vertical;
+  \item exemplo \texttt{Ex11\_Columnar3DTransport}.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} Campos 3D columnar devem ser criados, transportados e exportados mantendo coer\^encia geom\'etrica e conserva\c{c}\~ao de massa.
+
+\subsection*{Bloco 12, superf\'icie livre, wetting and drying e geometria m\'ovel simples}
+
+\textbf{Raz\~ao.} Modelos ambientais costeiros e fluviais precisam de superf\'icie livre e dom\'inio ativo vari\'avel. Este bloco deve introduzir movimento geom\'etrico controlado antes de qualquer remeshing geral.
+
+\textbf{Objetivo.} Permitir volumes dependentes da eleva\c{c}\~ao, estado wet/dry e diagn\'ostico de conserva\c{c}\~ao geom\'etrica.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item campo de eleva\c{c}\~ao \(\eta\);
+  \item altura de coluna e volume dependente do tempo;
+  \item m\'ascaras wet/dry;
+  \item \`areas ativas de faces;
+  \item geometric conservation law;
+  \item regras de estabilidade e toler\^ancias.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item bacia com varia\c{c}\~ao de n\'ivel;
+  \item frente wet/dry simples;
+  \item campo constante preservado em geometria m\'ovel;
+  \item exemplo \texttt{Ex12\_FreeSurfaceWetDry}.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} A mudan\c{c}a de volume n\~ao deve criar massa artificial e o estado wet/dry deve ser reproduz\'ivel, diagnostic\'avel e visualiz\'avel.
+
+\subsection*{Bloco 13, remeshing controlado e transfer\^encia conservativa}
+
+\textbf{Raz\~ao.} Remeshing \`e necess\'ario para free-boundary, adapta\c{c}\~ao por gradientes, frentes m\'oveis e redistribui\c{c}\~ao de resolu\c{c}\~ao. Mas ele \`e perigoso se n\~ao houver transfer\^encia conservativa e auditoria rigorosa.
+
+\textbf{Objetivo.} Integrar solicita\c{c}\~oes de remeshing ao VoronoiMeshMaker e transferir campos conservados entre malhas.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item indicadores de adapta\c{c}\~ao baseados em gradiente, res\'iduo, wet/dry e densidade de part\'iculas;
+  \item protocolo de chamada ou troca de arquivos com o VMM;
+  \item transfer\^encia conservativa por intersec\c{c}\~ao ou m\'etodo validado;
+  \item auditoria de erro de conserva\c{c}\~ao;
+  \item atualiza\c{c}\~ao de campos, operadores, sa\'idas e checkpoints ap\'os troca de malha.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item remeshing com n\'umero fixo de volumes;
+  \item remeshing com n\'umero vari\'avel de volumes, se j\'a suportado pelo VMM;
+  \item campo constante preservado;
+  \item massa escalar preservada;
+  \item exemplo \texttt{Ex13\_ConservativeRemap}.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} Uma troca de malha deve preservar quantidades conservadas dentro de toler\^ancia definida e registrar diagn\'ostico completo de origem, destino, erro e qualidade de malha.
+
+\subsection*{Bloco 14, particionamento paralelo e balanceamento din\^amico}
+
+\textbf{Raz\~ao.} Malhas adaptativas, part\'iculas, wet/dry e modelos f\'isicos localizados criam cargas computacionais desiguais. Sem balanceamento, simula\c{c}\~oes paralelas ficam limitadas pelo processo mais carregado.
+
+\textbf{Objetivo.} Criar grafo/hipergrafo ponderado do problema e integrar backend de particionamento din\^amico.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item pesos por c\'elula, face, camada, part\'icula e modelo ativo;
+  \item pesos de comunica\c{c}\~ao;
+  \item estado de parti\c{c}\~ao e ghosts;
+  \item plano de migra\c{c}\~ao de campos;
+  \item backend opcional Zoltan ou equivalente;
+  \item diagn\'ostico de imbalance antes e depois do rebalanceamento.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item parti\c{c}\~ao de malha fixa;
+  \item redistribui\c{c}\~ao ap\'os remeshing;
+  \item caso com carga artificial concentrada;
+  \item exemplo \texttt{Ex14\_DynamicLoadBalancing}.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} O sistema deve reduzir imbalance em caso controlado, migrar campos sem perda e manter resultados independentes da parti\c{c}\~ao dentro de toler\^ancias num\'ericas.
+
+\subsection*{Bloco 15, modelos f\'isicos adicionais}
+
+\textbf{Raz\~ao.} Transporte e hidrodin\^amica s\~ao a base. Depois disso, os modelos do ecossistema MOHID podem ser portados de forma controlada, sempre a partir de equa\c{c}\~oes documentadas e testes.
+
+\textbf{Objetivo.} Adicionar sedimentos, qualidade da \`agua, part\'iculas lagrangianas e acoplamentos selecionados.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item ficha matem\'atica de cada modelo;
+  \item par\^ametros com unidades;
+  \item campos de entrada e sa\'ida;
+  \item diagn\'osticos espec\'ificos;
+  \item testes de conserva\c{c}\~ao quando aplic\'avel;
+  \item pelo menos um caso exemplo por modelo oficial.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item rea\c{c}\~ao local sem transporte;
+  \item transporte com fonte/sumidouro;
+  \item sedimenta\c{c}\~ao ou deposi\c{c}\~ao simples;
+  \item libera\c{c}\~ao lagrangiana em campo prescrito.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} Nenhum modelo deve ser classificado como oficial sem equa\c{c}\~oes, unidades, documenta\c{c}\~ao, teste e exemplo execut\'avel.
+
+\subsection*{Bloco 16, compatibilidade conceitual com MOHID cl\'assico}
+
+\textbf{Raz\~ao.} O Mohid-NG deve preservar a ambi\c{c}\~ao f\'isica do MOHID cl\'assico, mas n\~ao deve repetir sua estrutura de grelha e loops. A compara\c{c}\~ao precisa ser feita por equa\c{c}\~oes, diagn\'osticos e casos de refer\^encia.
+
+\textbf{Objetivo.} Criar ferramentas e casos para comparar Mohid-NG e MOHID cl\'assico em problemas equivalentes.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item tabela de correspond\^encia entre modelos cl\'assicos e modelos Mohid-NG;
+  \item leitores ou conversores de casos selecionados, quando vi\'avel;
+  \item benchmarks equivalentes;
+  \item relat\'orios de diferen\c{c}as esperadas por discretiza\c{c}\~ao;
+  \item documenta\c{c}\~ao de limita\c{c}\~oes.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item caso simples reproduz\'ivel nos dois sistemas;
+  \item compara\c{c}\~ao de balan\c{c}os globais;
+  \item compara\c{c}\~ao de tend\^encias, n\~ao de bitwise output;
+  \item relat\'orio de diverg\^encias aceit\'aveis.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} O projeto deve demonstrar que a compatibilidade pretendida \`e matem\'atica e f\'isica, n\~ao uma tentativa de reproduzir a discretiza\c{c}\~ao estruturada do MOHID original.
+
+\subsection*{Bloco 17, documenta\c{c}\~ao p\'ublica, site e distribui\c{c}\~ao}
+
+\textbf{Raz\~ao.} Um projeto operacional precisa ser compreens\'ivel, instal\'avel e verific\'avel por terceiros. A documenta\c{c}\~ao deve acompanhar o c\'odigo, n\~ao ser produzida somente no fim.
+
+\textbf{Objetivo.} Consolidar a documenta\c{c}\~ao Sphinx tril\'ingue, exemplos e guias de instala\c{c}\~ao.
+
+\textbf{Necess\'ario concluir.}
+\begin{itemize}
+  \item site Sphinx com PyData theme e identidade visual Mohid-NG;
+  \item p\'aginas em \texttt{en-gb}, \texttt{pt-br} e \texttt{pt-pt};
+  \item p\'agina de institui\c{c}\~ao participante UERJ/IPRJ;
+  \item guias de instala\c{c}\~ao, primeiros casos, teoria, exemplos, valida\c{c}\~ao e developer guide;
+  \item CI para build da documenta\c{c}\~ao;
+  \item controle de logos e permiss\~oes institucionais.
+\end{itemize}
+
+\textbf{Testes e exemplos.}
+\begin{itemize}
+  \item build local do Sphinx;
+  \item verifica\c{c}\~ao de links internos;
+  \item cada exemplo documentado deve ser execut\'avel;
+  \item ao menos um tutorial completo por idioma.
+\end{itemize}
+
+\textbf{Condi\c{c}\~ao de passagem.} Um novo usu\'ario deve conseguir instalar, executar o primeiro caso, visualizar resultado e entender a fronteira Mohid-NG/VoronoiMeshMaker usando apenas a documenta\c{c}\~ao p\'ublica.
+
+\section{Crit\'erios globais de maturidade}
+
+\begin{longtable}{p{0.22\textwidth}p{0.68\textwidth}}
+\toprule
+\textbf{Dimens\~ao} & \textbf{Crit\'erio}\tabularnewline
+\midrule
+Conserva\c{c}\~ao & Toda equa\c{c}\~ao conservativa deve ter auditoria de balan\c{c}o.\tabularnewline
+Valida\c{c}\~ao & Todo modelo oficial deve ter teste m\'inimo, exemplo e documenta\c{c}\~ao matem\'atica.\tabularnewline
+Usabilidade & Exemplos principais devem rodar por arquivos de caso, sem C++ avan\c{c}ado.\tabularnewline
+Desempenho & Kernels principais devem reportar tempo de montagem, solver, comunica\c{c}\~ao e I/O.\tabularnewline
+Malha & Toda altera\c{c}\~ao de malha deve preservar metadados, patches, campos e quantidades conservadas.\tabularnewline
+Paralelismo & Resultados paralelos devem ser compar\'aveis aos seriais nos testes de regress\~ao.\tabularnewline
+Restart & Todo exemplo n\~ao trivial deve poder parar e reiniciar sem perda de consist\^encia.\tabularnewline
+GIS & Todo caso real deve declarar CRS, datum horizontal, datum vertical e conven\c{c}\~ao de sinal vertical.\tabularnewline
+\bottomrule
+\end{longtable}
+
+\section{Conclus\~ao}
+
+O Mohid-NG deve ser uma plataforma de modela\c{c}\~ao ambiental em volumes finitos sobre malhas Voronoi. A continuidade com o MOHID cl\'assico deve ocorrer no n\'ivel das equa\c{c}\~oes, dos modelos f\'isicos, dos processos ambientais e da ambi\c{c}\~ao operacional. A ruptura deve ocorrer no n\'ivel da malha, da arquitetura, da representa\c{c}\~ao de dados, dos operadores e da estrat\'egia de desempenho.
+
+\begin{principlebox}{Resumo final}
+O VoronoiMeshMaker ser\'a respons\'avel por qualquer implementa\c{c}\~ao de malha. O Mohid-NG ser\'a respons\'avel por resolver equa\c{c}\~oes f\'isicas em malhas Voronoi, com conserva\c{c}\~ao, desempenho, valida\c{c}\~ao, paralelismo, solvers acelerados, GIS operacional e API acess\'ivel ao usu\'ario n\~ao especialista em C++ moderno.
+\end{principlebox}
+
+\end{document}

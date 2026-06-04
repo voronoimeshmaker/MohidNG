@@ -1,0 +1,838 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+\definecolor{mohidblue}{RGB}{20,68,114}
+\definecolor{mohidgrey}{RGB}{90,90,90}
+\definecolor{codebg}{RGB}{247,247,247}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=mohidblue,
+  urlcolor=mohidblue,
+  citecolor=mohidblue,
+  pdftitle={Mohid-NG Coding and Implementation Standard},
+  pdfauthor={Mohid-NG Project},
+  pdfsubject={Coding standard and implementation discipline for Mohid-NG},
+  pdfkeywords={Mohid-NG, coding standard, C++, Voronoi, finite volume, HPC}
+}
+
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Mohid-NG Coding and Implementation Standard}
+\rhead{Draft}
+\cfoot{\thepage}
+
+\titleformat{\section}{\Large\bfseries\color{mohidblue}}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\large\bfseries\color{mohidblue}}{\thesubsection}{0.7em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{mohidblue}}{\thesubsubsection}{0.7em}{}
+
+\lstdefinestyle{mohidcpp}{
+  language=C++,
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{mohidgrey},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false
+}
+
+\setlist[itemize]{topsep=3pt,itemsep=2pt,parsep=0pt,leftmargin=1.5em}
+\setlist[enumerate]{topsep=3pt,itemsep=2pt,parsep=0pt,leftmargin=1.8em}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\shall}{\textbf{shall}}
+\newcommand{\mustnot}{\textbf{shall not}}
+\newcommand{\should}{\textbf{should}}
+\newcommand{\may}{\textbf{may}}
+
+\begin{document}
+\pagenumbering{gobble}
+
+\begin{titlepage}
+  \centering
+  \vspace*{2.0cm}
+  {\Huge\bfseries\color{mohidblue} Mohid-NG Coding and Implementation Standard\par}
+  \vspace{0.7cm}
+  {\Large Formal coding rules for a Voronoi-native environmental modelling platform\par}
+  \vspace{1.5cm}
+  {\large Draft version for architectural consolidation\par}
+  \vfill
+  \begin{minipage}{0.86\textwidth}
+  \small
+  This document defines the coding, organisation, implementation and review standard for Mohid-NG. It is written as a project standard, not as a tutorial. The aim is to support a high-performance, maintainable, scientifically auditable code base without exposing unnecessary implementation complexity to users.
+  \end{minipage}
+  \vfill
+  {\large Mohid-NG Project\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+
+\section{Purpose and scope}
+
+This document defines how Mohid-NG source code shall be written, organised, reviewed, tested and maintained. It applies to the Mohid-NG solver, numerical modules, physical-model modules, field infrastructure, forcing infrastructure, input and output layers, validation code, examples and public user-facing APIs.
+
+The standard is intended to support the following project goals:
+
+\begin{itemize}
+  \item a Voronoi-native finite-volume modelling platform;
+  \item high runtime performance on serial and parallel systems;
+  \item formal separation between physics, numerics, mesh services, solvers, input and output;
+  \item long-term maintainability by a small technical team;
+  \item scientific auditability of models, parameters, fields and conservation properties;
+  \item a simple public API for users who are not C++ specialists;
+  \item advanced C++ implementation internally, where this improves runtime behaviour, safety or extensibility.
+\end{itemize}
+
+This standard does not define the mesh-generation algorithms themselves. All mesh generation, remeshing, generator-point movement, Voronoi connectivity construction, mesh-quality analysis, geometry adaptation and mesh-specific partitioning operations belong to VoronoiMeshMaker. Mohid-NG shall consume Voronoi-based computational meshes and mesh metadata through a documented contract.
+
+\section{Architectural principles}
+
+Mohid-NG code shall follow the principles below.
+
+\begin{enumerate}
+  \item Public interfaces shall be stable, minimal and physically meaningful.
+  \item Implementation details shall remain private to the module that owns them.
+  \item Physical models shall not depend on external solver-library types, GIS-library handles, raw file-format handles or VoronoiMeshMaker implementation types.
+  \item Mesh-related algorithms shall be implemented in VoronoiMeshMaker, not in Mohid-NG.
+  \item The numerical core shall prioritise runtime performance over compilation speed.
+  \item Hot loops shall avoid inheritance, virtual functions, heap allocation, string lookup and indirect object graphs.
+  \item Data-oriented design shall be the default for topology views, geometry views, fields, particles, face loops, cell loops, layer loops and assembly kernels.
+  \item Factories, registries, configuration parsing and input/output code may use higher-level abstractions, provided they do not enter performance-critical loops.
+  \item Every physical model shall document its equations, assumptions, parameters, units, fields, diagnostics and validation cases.
+  \item Every operation that can alter conserved quantities shall expose diagnostics for conservation error.
+\end{enumerate}
+
+The guiding distinction is:
+
+\begin{quote}
+Advanced C++ is allowed inside Mohid-NG; advanced C++ shall not be required from the ordinary Mohid-NG user.
+\end{quote}
+
+\section{Project boundaries}
+
+\subsection{Mohid-NG}
+
+Mohid-NG owns the physical and numerical modelling platform. It shall provide:
+
+\begin{itemize}
+  \item field storage and field registries;
+  \item finite-volume operators over Voronoi mesh views;
+  \item physical models;
+  \item forcing and boundary-condition handling;
+  \item time integration;
+  \item residual assembly;
+  \item solver-backend adapters;
+  \item conservation diagnostics;
+  \item restart and checkpoint logic;
+  \item scientific output and validation infrastructure;
+  \item user-facing case execution.
+\end{itemize}
+
+Mohid-NG shall not construct or modify Voronoi meshes internally. When mesh adaptation, remeshing or repartitioning is required, Mohid-NG shall request these operations through a formal service contract and shall then receive a new mesh state, mapping metadata, partition metadata and transfer metadata.
+
+\subsection{VoronoiMeshMaker}
+
+VoronoiMeshMaker owns all mesh-specific implementation. This includes:
+
+\begin{itemize}
+  \item Voronoi mesh generation in two and three dimensions;
+  \item vertically structured Voronoi-column mesh construction, when used;
+  \item generator-point insertion, removal and movement;
+  \item remeshing;
+  \item topology reconstruction;
+  \item cell-face-node connectivity;
+  \item boundary-patch construction from geometric and GIS inputs;
+  \item mesh-quality metrics;
+  \item mesh validation;
+  \item geometric search structures required by remapping;
+  \item mesh hierarchy construction for geometric multigrid, when available;
+  \item mesh partitioning metadata, when it is mesh-topology dependent.
+\end{itemize}
+
+The interface between Mohid-NG and VoronoiMeshMaker shall be file-based, memory-based or service-based, but it shall remain explicit and documented. Mohid-NG shall not include private VoronoiMeshMaker headers in its numerical kernels.
+
+\section{Public and private structure}
+
+\subsection{Directory organisation}
+
+The recommended organisation is:
+
+\begin{lstlisting}[style=mohidcpp]
+include/MohidNG/              // public API
+src/MohidNG/                  // implementation
+src/MohidNG/Internal/         // private implementation details
+tests/                        // unit, integration and validation tests
+examples/                     // documented examples
+benchmarks/                   // performance and scaling cases
+docs/                         // user and developer documentation
+\end{lstlisting}
+
+Public headers shall be located under \code{include/MohidNG}. Private implementation headers shall remain under \code{src/MohidNG/Internal} or an equivalent internal path. Public headers shall not include private headers.
+
+\subsection{Public API}
+
+Public API types shall represent stable project concepts. Examples include:
+
+\begin{lstlisting}[style=mohidcpp]
+MohidNG::Case
+MohidNG::Simulation
+MohidNG::MeshView
+MohidNG::GeometryState
+MohidNG::FieldSet
+MohidNG::BoundaryPatch
+MohidNG::ForcingSet
+MohidNG::SolverOptions
+MohidNG::Diagnostics
+\end{lstlisting}
+
+Public headers shall not expose:
+
+\begin{itemize}
+  \item external numerical backend objects;
+  \item raw HDF5, NetCDF, GDAL, OGR or PROJ handles;
+  \item private VoronoiMeshMaker implementation types;
+  \item internal storage containers not intended as stable API;
+  \item implementation-specific work arrays;
+  \item raw pointers whose ownership semantics are unclear.
+\end{itemize}
+
+\subsection{Internal implementation}
+
+Internal implementation types may use advanced C++ constructs, including templates, concepts, traits, policy classes, static dispatch and compile-time configuration. This complexity shall remain behind stable public APIs or behind clearly documented developer-level extension points.
+
+\section{Naming standard}
+
+\subsection{Namespace}
+
+The project shall use one namespace consistently. The recommended namespace is:
+
+\begin{lstlisting}[style=mohidcpp]
+namespace mohidng
+\end{lstlisting}
+
+If a capitalised namespace is selected instead, it shall be used consistently throughout the project. Mixing \code{mohidng}, \code{MohidNG}, \code{MohidNg} and other variants is forbidden.
+
+\subsection{Types}
+
+Concrete types shall use \code{PascalCase}:
+
+\begin{lstlisting}[style=mohidcpp]
+VoronoiMeshView
+GeometryState
+CellField
+FaceField
+FieldSet
+BoundaryPatch
+TransportModel
+SolverOptions
+RestartWriter
+\end{lstlisting}
+
+Template parameters shall use short but meaningful names. Avoid single-letter template parameters except for conventional mathematical or iterator-like cases.
+
+\subsection{Functions}
+
+Use one function naming convention throughout the project. The recommended convention is \code{snake\_case}.
+
+\begin{lstlisting}[style=mohidcpp]
+load_case(...)
+load_mesh(...)
+advance_time_step(...)
+compute_gradient(...)
+assemble_residual(...)
+write_checkpoint(...)
+\end{lstlisting}
+
+Member functions and free functions shall follow the same convention unless there is a documented reason to distinguish them.
+
+\subsection{Enums and constants}
+
+Use scoped enums for typed choices:
+
+\begin{lstlisting}[style=mohidcpp]
+enum class FieldLocation {
+    Cell,
+    Face,
+    Node,
+    Layer,
+    Particle
+};
+\end{lstlisting}
+
+Avoid unscoped enums in public APIs. Avoid macro constants unless needed for build configuration or third-party integration.
+
+\subsection{Implementation-specific names}
+
+Implementation-specific names shall be explicit when ambiguity is possible:
+
+\begin{lstlisting}[style=mohidcpp]
+compute_gradient_wlsqr(...)
+assemble_transport_native(...)
+write_unstructured_vtu(...)
+\end{lstlisting}
+
+This rule shall be applied with restraint. Prefer namespaces, file organisation and type names over excessive function-name length.
+
+\section{Header policy and include discipline}
+
+\subsection{Header guards}
+
+Every header shall use:
+
+\begin{lstlisting}[style=mohidcpp]
+#pragma once
+\end{lstlisting}
+
+as the first non-comment line.
+
+\subsection{Header contents}
+
+A public header shall contain:
+
+\begin{itemize}
+  \item a brief description of its purpose;
+  \item the public concepts exposed by the file;
+  \item minimal includes;
+  \item forward declarations where appropriate;
+  \item no private implementation leakage.
+\end{itemize}
+
+\subsection{Include order}
+
+Includes shall be ordered as:
+
+\begin{lstlisting}[style=mohidcpp]
+#include <standard_library_headers>
+
+#include <external_library_headers>
+
+#include <MohidNG/...>
+\end{lstlisting}
+
+Each file shall include only what it uses. Public headers shall avoid heavy external dependencies. External library headers shall be isolated inside implementation files or adapter modules whenever possible.
+
+\section{Formatting}
+
+Mohid-NG shall use automated formatting. A repository-level \code{.clang-format} file shall define the formatting policy.
+
+Rules:
+
+\begin{enumerate}
+  \item Every submitted file shall be formatted automatically.
+  \item Manual alignment that fights the formatter shall be avoided.
+  \item \code{clang-format off} shall be used only in exceptional cases.
+  \item Formatting violations shall block merging.
+  \item The formatting standard shall apply to production code, tests and examples.
+\end{enumerate}
+
+The project should also use \code{clang-tidy} for static checks and may use \code{cmake-format} for CMake files.
+
+\section{Error handling}
+
+\subsection{General rule}
+
+All errors that can occur in production runs shall produce explicit diagnostic information. Silent failure is forbidden.
+
+Errors shall identify:
+
+\begin{itemize}
+  \item the operation that failed;
+  \item the relevant file, field, mesh entity, model or backend;
+  \item the invalid value, if available;
+  \item the expected condition;
+  \item whether the error is recoverable.
+\end{itemize}
+
+\subsection{Exceptions}
+
+Exceptions may be used in non-hot code paths, including:
+
+\begin{itemize}
+  \item case parsing;
+  \item mesh loading;
+  \item input and output;
+  \item configuration validation;
+  \item model registration;
+  \item checkpoint reading;
+  \item pre-run validation.
+\end{itemize}
+
+Example:
+
+\begin{lstlisting}[style=mohidcpp]
+throw MohidError("Mesh file does not contain boundary-patch metadata.");
+\end{lstlisting}
+
+\subsection{Hot loops}
+
+Performance-critical kernels shall not throw exceptions inside loops over cells, faces, layers or particles. Validation shall occur before entering such loops. Kernel assumptions shall be documented.
+
+\subsection{Backend errors}
+
+External solver, input/output and GIS-library errors shall be translated into Mohid-NG diagnostics at adapter boundaries. Physical models shall not expose backend-specific error mechanisms.
+
+\section{Argument validation}
+
+Public API functions shall validate their arguments. Validation is mandatory for:
+
+\begin{itemize}
+  \item case loading;
+  \item mesh loading;
+  \item model registration;
+  \item field creation;
+  \item boundary-condition creation;
+  \item forcing interpolation;
+  \item restart reading;
+  \item solver configuration;
+  \item remeshing requests;
+  \item field-transfer requests.
+\end{itemize}
+
+Validation shall check, where applicable:
+
+\begin{itemize}
+  \item file existence and readability;
+  \item schema validity;
+  \item mesh dimensionality;
+  \item Voronoi metadata completeness;
+  \item field location and field size;
+  \item unit compatibility;
+  \item boundary-patch consistency;
+  \item time-axis consistency;
+  \item coordinate-reference metadata;
+  \item parallel ownership and ghost consistency;
+  \item solver option consistency.
+\end{itemize}
+
+Internal kernels may assume validated input, provided this assumption is stated in the kernel contract.
+
+\section{Data ownership and lifetime}
+
+Mohid-NG shall distinguish between:
+
+\begin{itemize}
+  \item owning containers;
+  \item non-owning views;
+  \item temporary workspaces;
+  \item backend-owned data;
+  \item external-library handles;
+  \item persistent simulation state.
+\end{itemize}
+
+Rules:
+
+\begin{enumerate}
+  \item Mesh topology and geometry used by physical models shall be exposed through non-owning views.
+  \item The simulation state shall own fields, model states and diagnostics.
+  \item Solver backend objects shall be owned only by backend adapters.
+  \item Raw pointers shall not appear in public APIs unless there is a strong interoperability reason.
+  \item Hot loops shall use spans, views or contiguous buffers after ownership has been resolved outside the loop.
+  \item A view shall never outlive the object from which it was created.
+\end{enumerate}
+
+\section{Data-oriented numerical core}
+
+The numerical core shall be designed for efficient traversal of cells, faces, layers and particles.
+
+Preferred storage patterns:
+
+\begin{itemize}
+  \item structure of arrays;
+  \item contiguous field values;
+  \item integer indices;
+  \item offset arrays;
+  \item compact adjacency arrays;
+  \item face-based loops for fluxes;
+  \item cell-based loops for source terms;
+  \item layer-based loops for vertical processes;
+  \item particle arrays for Lagrangian models.
+\end{itemize}
+
+Avoid in hot paths:
+
+\begin{itemize}
+  \item one heap-allocated object per cell;
+  \item one heap-allocated object per face;
+  \item pointer-linked graph structures;
+  \item virtual dispatch per entity;
+  \item string lookup inside loops;
+  \item heap allocation inside loops;
+  \item repeated unit conversion inside loops;
+  \item repeated geometry lookup through slow maps.
+\end{itemize}
+
+\section{Mesh contract}
+
+Mohid-NG shall operate only on Voronoi-based meshes. Mesh construction and mesh alteration are external to Mohid-NG and belong to VoronoiMeshMaker.
+
+\subsection{Accepted mesh information}
+
+A Mohid-NG mesh view shall provide, at minimum:
+
+\begin{itemize}
+  \item cell identifiers;
+  \item face identifiers;
+  \item node identifiers, if required;
+  \item cell-face connectivity;
+  \item face-cell connectivity;
+  \item neighbour lists;
+  \item cell volumes or areas;
+  \item face areas or lengths;
+  \item cell centres;
+  \item face centres;
+  \item outward face normals;
+  \item boundary-patch membership;
+  \item region membership;
+  \item coordinate-reference metadata;
+  \item mesh-quality diagnostics;
+  \item partition and ghost metadata, when running in parallel.
+\end{itemize}
+
+\subsection{Forbidden mesh implementation inside Mohid-NG}
+
+Mohid-NG shall not implement:
+
+\begin{itemize}
+  \item Voronoi tessellation construction;
+  \item generator-point insertion;
+  \item generator-point removal;
+  \item generator-point movement;
+  \item remeshing algorithms;
+  \item connectivity reconstruction after remeshing;
+  \item mesh-quality improvement algorithms;
+  \item geometric search structures for mesh generation;
+  \item GIS-to-mesh geometric conversion;
+  \item mesh coarsening or refinement algorithms;
+  \item mesh hierarchy construction.
+\end{itemize}
+
+Mohid-NG may request such operations and may provide physical indicators, workload weights or field information needed by VoronoiMeshMaker. The operation itself remains a VoronoiMeshMaker responsibility.
+
+\section{Fields and units}
+
+Every field shall declare:
+
+\begin{itemize}
+  \item name;
+  \item physical meaning;
+  \item location, for example cell, face, node, layer or particle;
+  \item unit;
+  \item time level;
+  \item ownership and ghost status in parallel runs;
+  \item whether it is prognostic, diagnostic or temporary;
+  \item whether it represents a conserved density, extensive quantity or auxiliary variable.
+\end{itemize}
+
+Units shall be mandatory in configuration, input and output metadata. Unit checking should occur outside hot loops. Kernels shall operate on already normalised values in the expected internal unit system.
+
+\section{Physical-model implementation}
+
+New physical models shall be implemented as concrete types satisfying documented model concepts. They shall not be implemented as subclasses of an abstract base class.
+
+Each model shall provide:
+
+\begin{itemize}
+  \item model name;
+  \item model category;
+  \item version;
+  \item maintainer;
+  \item governing equations;
+  \item assumptions and limitations;
+  \item input fields;
+  \item output fields;
+  \item parameters and units;
+  \item local source terms;
+  \item conservative flux requirements;
+  \item boundary-condition requirements;
+  \item diagnostics;
+  \item validation cases;
+  \item minimal examples.
+\end{itemize}
+
+Physical models shall not directly modify mesh topology or mesh geometry. If a model requires adaptation, it shall produce indicators or requests that are passed to the mesh-service layer.
+
+\section{Numerical operators}
+
+Numerical operators shall be implemented as reusable services, not hidden inside individual physical models. This includes:
+
+\begin{itemize}
+  \item gradient reconstruction;
+  \item divergence operators;
+  \item face interpolation;
+  \item limiters;
+  \item diffusive fluxes;
+  \item advective fluxes;
+  \item source-term projection;
+  \item conservative remapping support;
+  \item residual assembly support.
+\end{itemize}
+
+Gradient reconstruction shall be a first-class numerical service because it is used by physical discretisation, face reconstruction, mesh-adaptation indicators and error diagnostics.
+
+Operator implementations shall document:
+
+\begin{itemize}
+  \item required mesh information;
+  \item field locations;
+  \item expected order of accuracy;
+  \item known limitations;
+  \item conservation properties;
+  \item parallel ghost requirements;
+  \item validation tests.
+\end{itemize}
+
+\section{Solver backend isolation}
+
+Mohid-NG owns the equations, field semantics, residuals and diagnostics. External numerical backends may solve algebraic systems, nonlinear systems, time-integration subproblems or optimisation subproblems.
+
+Rules:
+
+\begin{enumerate}
+  \item Physical models shall not call external solver libraries directly.
+  \item Numerical assembly shall produce backend-neutral system views or backend-neutral assembly requests.
+  \item Backend adapters shall translate Mohid-NG data into backend-specific data structures.
+  \item Backend-specific objects shall not appear in physical-model APIs.
+  \item Solver diagnostics shall be returned in backend-neutral form.
+\end{enumerate}
+
+Solver diagnostics shall include:
+
+\begin{itemize}
+  \item setup time;
+  \item solve time;
+  \item number of iterations;
+  \item residual reduction;
+  \item preconditioner rebuild frequency;
+  \item memory use;
+  \item convergence failures;
+  \item parallel efficiency indicators, when available.
+\end{itemize}
+
+\section{GIS, coordinate systems and input data}
+
+GIS compatibility is required for realistic environmental simulations, but GIS objects shall not become the internal finite-volume representation.
+
+Rules:
+
+\begin{enumerate}
+  \item Coordinate-reference metadata shall be mandatory for georeferenced meshes.
+  \item The computational kernel shall operate in a projected metric coordinate system.
+  \item GIS handles shall remain inside GIS adapter modules.
+  \item Boundary names, region names, forcing zones and monitoring points shall be propagated from GIS inputs into Mohid-NG metadata.
+  \item Three-dimensional GIS or surface data shall be converted into VoronoiMeshMaker mesh services before numerical simulation.
+\end{enumerate}
+
+Mohid-NG shall store enough metadata to make outputs interpretable in GIS and scientific visualisation tools.
+
+\section{Parallel execution}
+
+Parallel code shall be designed around explicit ownership, ghost data and communication schedules.
+
+Every parallel field shall define:
+
+\begin{itemize}
+  \item owned range;
+  \item ghost range;
+  \item update schedule;
+  \item communication pattern;
+  \item consistency requirements before each kernel.
+\end{itemize}
+
+Dynamic workload changes shall be handled through formal repartitioning and migration mechanisms. Mohid-NG may compute physical and computational workload weights, but mesh-topology-dependent partitioning operations shall be delegated through the mesh-service contract when they require mesh modification or mesh repartition metadata.
+
+\section{Random numbers and reproducibility}
+
+System random-number functions with implementation-dependent behaviour shall not be used in production code. Stochastic simulations shall use approved reproducible generators with explicit seed management.
+
+This applies to:
+
+\begin{itemize}
+  \item particle diffusion;
+  \item stochastic forcing;
+  \item randomised tests;
+  \item Monte Carlo experiments;
+  \item stochastic parameter sampling.
+\end{itemize}
+
+Every stochastic simulation shall write its seed, generator type and relevant distribution parameters to metadata.
+
+\section{Documentation and comments}
+
+Comments shall explain intent, assumptions and invariants. They shall not merely restate obvious code.
+
+Comments should explain:
+
+\begin{itemize}
+  \item physical assumptions;
+  \item discrete conservation properties;
+  \item boundary-condition interpretation;
+  \item parallel ownership rules;
+  \item remeshing assumptions;
+  \item field-transfer guarantees;
+  \item solver-preconditioner assumptions;
+  \item unit conventions;
+  \item coordinate conventions.
+\end{itemize}
+
+Comments shall avoid:
+
+\begin{itemize}
+  \item dead code;
+  \item commented-out blocks with no explanation;
+  \item unexplained formulae;
+  \item historical notes with no operational value;
+  \item debug messages left in production code;
+  \item vague claims such as ``optimised'', ``robust'' or ``accurate'' without context.
+\end{itemize}
+
+Public documentation shall be written for users. Developer documentation shall be written for maintainers. Scientific documentation shall connect code modules to equations, assumptions and validation cases.
+
+\section{Build configuration and dependencies}
+
+Optional dependencies shall be isolated behind build options and adapter modules. The core shall have a minimal build configuration suitable for development and testing.
+
+Rules:
+
+\begin{enumerate}
+  \item Do not spread dependency-specific preprocessor blocks through physical-model code.
+  \item Prefer target-level configuration in the build system.
+  \item Place backend-specific code in backend-specific translation units.
+  \item Document every optional dependency and the feature it enables.
+  \item Do not make a heavy optional dependency mandatory unless it is essential to a declared release target.
+\end{enumerate}
+
+Use preprocessor conditionals only for optional dependencies, platforms, compiler workarounds and feature availability. Mark the closing condition of long blocks.
+
+\section{Testing standard}
+
+Every new module shall include appropriate tests. The required test type depends on the module.
+
+\begin{longtable}{p{0.28\textwidth}p{0.62\textwidth}}
+\toprule
+\textbf{Module type} & \textbf{Required tests} \\
+\midrule
+Field infrastructure & unit tests, size tests, location tests, ghost-update tests \\
+Mesh view consumption & consistency tests, boundary-patch tests, geometry-metadata tests \\
+Numerical operator & manufactured-solution tests, conservation tests, convergence tests \\
+Physical model & equation test, parameter test, validation case, regression case \\
+Solver adapter & assembly test, convergence test, failure-path test, diagnostic test \\
+Forcing module & interpolation test, unit test, missing-value test, time-axis test \\
+Restart module & write-read consistency test, metadata test, restart continuation test \\
+Parallel module & ownership test, ghost test, communication test, small MPI regression test \\
+Remeshing interface & request validation test, field-transfer diagnostic test, conservation audit \\
+\bottomrule
+\end{longtable}
+
+No new physical model shall be accepted as official without:
+
+\begin{itemize}
+  \item equation documentation;
+  \item parameter documentation;
+  \item unit declaration;
+  \item at least one example case;
+  \item validation or regression evidence;
+  \item diagnostics;
+  \item stated limitations.
+\end{itemize}
+
+\section{Examples}
+
+Examples are part of the code standard. They shall be small, reproducible and documented.
+
+Each example shall state:
+
+\begin{itemize}
+  \item purpose;
+  \item required input files;
+  \item expected output files;
+  \item physical interpretation;
+  \item numerical options used;
+  \item how success is verified.
+\end{itemize}
+
+Examples shall not be used as dumping grounds for experimental code. Experimental examples shall be clearly marked and shall not be used as validation evidence.
+
+\section{Code review and acceptance}
+
+A change may be accepted only if it satisfies the relevant criteria below:
+
+\begin{itemize}
+  \item it builds in the required configurations;
+  \item it is formatted automatically;
+  \item it passes existing tests;
+  \item it adds tests for new behaviour;
+  \item it does not expose private implementation details through public headers;
+  \item it does not introduce mesh-generation logic into Mohid-NG;
+  \item it does not introduce backend-specific types into physical models;
+  \item it documents new public APIs;
+  \item it documents physical assumptions for new models;
+  \item it reports conservation diagnostics when conserved quantities are affected;
+  \item it includes an example when the feature is user-facing.
+\end{itemize}
+
+\section{Deprecation policy}
+
+Public APIs shall not be removed without a deprecation path unless there is a severe correctness, security or scientific-integrity reason.
+
+Deprecation notices shall identify:
+
+\begin{itemize}
+  \item the deprecated API;
+  \item the replacement;
+  \item the reason for deprecation;
+  \item the planned removal stage;
+  \item any scientific effect on old case files or outputs.
+\end{itemize}
+
+Case-file schemas shall also follow a deprecation policy. Old cases shall either remain readable or fail with an actionable migration message.
+
+\section{Definition of done}
+
+A feature is not complete when it merely compiles. A Mohid-NG feature is complete when:
+
+\begin{enumerate}
+  \item the public interface is defined;
+  \item the implementation is isolated in the correct module;
+  \item ownership and lifetime are clear;
+  \item relevant arguments are validated;
+  \item errors produce useful diagnostics;
+  \item tests cover normal and failure paths;
+  \item examples exist when the feature is user-facing;
+  \item documentation describes use, assumptions and limitations;
+  \item conservation diagnostics exist when conserved quantities are affected;
+  \item parallel implications are either tested or explicitly declared out of scope;
+  \item mesh responsibilities remain in VoronoiMeshMaker;
+  \item no unnecessary implementation complexity leaks into the user API.
+\end{enumerate}
+
+\section{Summary}
+
+The Mohid-NG code standard can be summarised as follows:
+
+\begin{quote}
+Use modern C++ internally, expose a simple public API, keep all mesh implementation in VoronoiMeshMaker, operate only on Voronoi-based computational meshes, isolate external backends, design hot kernels around contiguous data, validate public inputs, report errors precisely, test every scientific feature and document every physical assumption.
+\end{quote}
+
+This standard is intended to protect the project against three risks: a solver that is fast but unmaintainable, a code base that is flexible but scientifically opaque, and a public API that exposes implementation complexity to users. Mohid-NG shall avoid all three.
+
+\end{document}
