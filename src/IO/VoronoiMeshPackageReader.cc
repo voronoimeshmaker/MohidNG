@@ -1,7 +1,3 @@
-#include "MohidNG/IO/VoronoiMeshPackageReader.h"
-
-#include <hdf5.h>
-
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
@@ -10,14 +6,22 @@
 #include <utility>
 #include <vector>
 
-#include "MohidNG/Core/Error.h"
-#include "MohidNG/Core/Logger.h"
+#include <hdf5.h>
+
+#include <MohidNG/Core/Error.h>
+#include <MohidNG/Core/ID.h>
+#include <MohidNG/Core/Logger.h>
+#include <MohidNG/Core/Types.h>
+#include <MohidNG/IO/VoronoiMeshPackageReader.h>
+
 
 namespace mohidng {
 namespace {
 
 class Hdf5Object {
  public:
+  DefineIdentity("MohidNG.IO.Hdf5Object")
+
   Hdf5Object() = default;
   Hdf5Object(hid_t id, herr_t (*close)(hid_t)) : id_(id), close_(close) {}
   Hdf5Object(const Hdf5Object&) = delete;
@@ -54,13 +58,15 @@ class Hdf5Object {
 
 [[nodiscard]] Hdf5Object OpenDataset(hid_t file, const char* path) {
   Hdf5Object dataset(H5Dopen2(file, path, H5P_DEFAULT), H5Dclose);
-  Require(dataset.IsValid(), "mesh.parse_error", std::string("Missing dataset: ") + path);
+  RequireClass(Hdf5Object, dataset.IsValid(), "mesh.parse_error",
+               std::string("Missing dataset: ") + path);
   return dataset;
 }
 
 [[nodiscard]] std::vector<hsize_t> DatasetDims(hid_t dataset, const char* path) {
   Hdf5Object space(H5Dget_space(dataset), H5Sclose);
-  Require(space.IsValid(), "mesh.parse_error", std::string("Cannot inspect dataset: ") + path);
+  RequireClass(Hdf5Object, space.IsValid(), "mesh.parse_error",
+               std::string("Cannot inspect dataset: ") + path);
   const int rank = H5Sget_simple_extent_ndims(space.Id());
   Require(rank > 0, "mesh.parse_error", std::string("Invalid dataset rank: ") + path);
   std::vector<hsize_t> dims(static_cast<std::size_t>(rank));
@@ -69,7 +75,7 @@ class Hdf5Object {
   return dims;
 }
 
-[[nodiscard]] std::vector<double> ReadDoubleDataset(hid_t file, const char* path, int expected_rank,
+[[nodiscard]] std::vector<Real> ReadRealDataset(hid_t file, const char* path, int expected_rank,
                                                     hsize_t expected_columns = 0) {
   const auto dataset = OpenDataset(file, path);
   const auto dims = DatasetDims(dataset.Id(), path);
@@ -83,7 +89,7 @@ class Hdf5Object {
   for (const hsize_t dim : dims) {
     count *= static_cast<std::size_t>(dim);
   }
-  std::vector<double> values(count);
+  std::vector<Real> values(count);
   const herr_t status = H5Dread(dataset.Id(), H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                                 values.data());
   Require(status >= 0, "mesh.parse_error", std::string("Cannot read dataset: ") + path);
@@ -117,7 +123,8 @@ class Hdf5Object {
   const auto dims = DatasetDims(dataset.Id(), path);
   Require(dims.size() == 1, "mesh.parse_error", std::string("Unexpected dataset rank: ") + path);
   Hdf5Object type(H5Dget_type(dataset.Id()), H5Tclose);
-  Require(type.IsValid(), "mesh.parse_error", std::string("Cannot inspect string dataset: ") + path);
+  RequireClass(Hdf5Object, type.IsValid(), "mesh.parse_error",
+               std::string("Cannot inspect string dataset: ") + path);
   const std::size_t width = H5Tget_size(type.Id());
   Require(width > 0, "mesh.parse_error", std::string("Invalid string width: ") + path);
 
@@ -229,7 +236,7 @@ void ValidatePackageMesh(const MeshView& mesh) {
       }(patches);
       Require(patch_exists, "mesh.invalid_connectivity", "Boundary face references unknown patch.");
     }
-    const double normal_norm = std::hypot(face.unit_normal.x, face.unit_normal.y);
+    const Real normal_norm = std::hypot(face.unit_normal.x, face.unit_normal.y);
     Require(std::isfinite(face.centre.x) && std::isfinite(face.centre.y) && face.length > 0.0,
             "mesh.invalid_connectivity", "Invalid face geometry.");
     Require(std::abs(normal_norm - 1.0) < 1.0e-8, "mesh.invalid_connectivity",
@@ -256,7 +263,7 @@ MeshView ReadVoronoiMeshPackage(const std::filesystem::path& path) {
   metadata.note = ReadStringAttribute(file.Id(), "note");
 
   const auto node_ids = ReadIndexDataset(file.Id(), "/nodes/id");
-  const auto node_xy = ReadDoubleDataset(file.Id(), "/nodes/xy", 2, 2);
+  const auto node_xy = ReadRealDataset(file.Id(), "/nodes/xy", 2, 2);
   Require(node_xy.size() == node_ids.size() * 2, "mesh.parse_error", "Node coordinate count mismatch.");
   std::vector<Node2D> nodes(node_ids.size());
   for (std::size_t i = 0; i < node_ids.size(); ++i) {
@@ -265,8 +272,8 @@ MeshView ReadVoronoiMeshPackage(const std::filesystem::path& path) {
   }
 
   const auto cell_ids = ReadIndexDataset(file.Id(), "/cells/id");
-  const auto cell_centres = ReadDoubleDataset(file.Id(), "/cells/centre", 2, 2);
-  const auto cell_areas = ReadDoubleDataset(file.Id(), "/cells/area", 1);
+  const auto cell_centres = ReadRealDataset(file.Id(), "/cells/centre", 2, 2);
+  const auto cell_areas = ReadRealDataset(file.Id(), "/cells/area", 1);
   Require(cell_centres.size() == cell_ids.size() * 2 && cell_areas.size() == cell_ids.size(),
           "mesh.parse_error", "Cell dataset size mismatch.");
   std::vector<Cell2D> cells(cell_ids.size());
@@ -279,9 +286,9 @@ MeshView ReadVoronoiMeshPackage(const std::filesystem::path& path) {
   const auto face_ids = ReadIndexDataset(file.Id(), "/faces/id");
   const auto owners = ReadIndexDataset(file.Id(), "/faces/owner");
   const auto neighbours = ReadIndexDataset(file.Id(), "/faces/neighbour");
-  const auto face_centres = ReadDoubleDataset(file.Id(), "/faces/centre", 2, 2);
-  const auto face_normals = ReadDoubleDataset(file.Id(), "/faces/unit_normal", 2, 2);
-  const auto face_lengths = ReadDoubleDataset(file.Id(), "/faces/length", 1);
+  const auto face_centres = ReadRealDataset(file.Id(), "/faces/centre", 2, 2);
+  const auto face_normals = ReadRealDataset(file.Id(), "/faces/unit_normal", 2, 2);
+  const auto face_lengths = ReadRealDataset(file.Id(), "/faces/length", 1);
   const auto patch_ids = ReadIntDataset(file.Id(), "/faces/patch_id");
   const std::size_t face_count = face_ids.size();
   Require(owners.size() == face_count && neighbours.size() == face_count &&

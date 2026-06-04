@@ -71,7 +71,7 @@ From `build/debug`, `exe_case1.cc` can be built and run with `make run_case1`. T
 ```bash
 python3 tools/check_design_system.py
 python3 tools/check_trilingual_docs.py
-build/docs-venv/bin/sphinx-build -b html docs build/docs/html -W --keep-going
+build/docs-venv/bin/sphinx-build -b html docs docs/html -W --keep-going
 ```
 
 ## Error, Exception and Trace Policy
@@ -80,7 +80,7 @@ Mohid-NG has its own error, exception and flow-trace subsystem. Errors use flexi
 
 ## Web Publication Options
 
-The documentation site is generated with Sphinx under uild/docs/html. Publication options are:
+The documentation site is generated with Sphinx under docs/html. Publication options are:
 
 - ReadTheDocs: best for versioned documentation and automatic builds from GitHub.
 - GitHub Pages: simple static hosting directly from a repository branch or Actions artifact.

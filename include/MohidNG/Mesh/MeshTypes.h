@@ -4,13 +4,15 @@
 #include <string>
 #include <vector>
 
-#include "MohidNG/Core/Index.h"
+#include <MohidNG/Core/Index.h>
+#include <MohidNG/Core/Types.h>
+
 
 namespace mohidng {
 
 struct Vec2 {
-  double x = 0.0;
-  double y = 0.0;
+  Real x = 0.0;
+  Real y = 0.0;
 };
 
 struct Node2D {
@@ -21,7 +23,7 @@ struct Node2D {
 struct Cell2D {
   CellIndex id{};
   Vec2 centre{};
-  double area = 0.0;
+  Real area = 0.0;
 };
 
 struct Face2D {
@@ -30,7 +32,7 @@ struct Face2D {
   CellIndex neighbour{};
   Vec2 centre{};
   Vec2 unit_normal{};
-  double length = 0.0;
+  Real length = 0.0;
   int patch_id = -1;
 };
 

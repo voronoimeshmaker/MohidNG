@@ -1,9 +1,9 @@
-#include "MohidNG/Mesh/MeshView.h"
-
 #include <algorithm>
 
-#include "MohidNG/Core/Error.h"
-#include "MohidNG/Core/Logger.h"
+#include <MohidNG/Core/Error.h>
+#include <MohidNG/Core/Logger.h>
+#include <MohidNG/Mesh/MeshView.h>
+
 
 namespace mohidng {
 
@@ -27,15 +27,15 @@ std::span<const BoundaryPatch> MeshView::BoundaryPatches() const { return patche
 const MeshMetadata& MeshView::Metadata() const { return metadata_; }
 
 const Cell2D& MeshView::Cell(CellIndex id) const {
-  MOHIDNG_TRACE_SCOPE("MeshView::Cell");
-  Require(mohidng::IsValid(id), "mesh.invalid_connectivity", "Invalid cell index.");
-  Require(static_cast<std::size_t>(id.value) < cells_.size(), "mesh.invalid_connectivity",
-          "Cell index out of range.");
+  MOHIDNG_TRACE_CLASS(MeshView::ClassId(), "Cell");
+  RequireClass(MeshView, mohidng::IsValid(id), "mesh.invalid_connectivity", "Invalid cell index.");
+  RequireClass(MeshView, static_cast<std::size_t>(id.value) < cells_.size(),
+               "mesh.invalid_connectivity", "Cell index out of range.");
   return cells_.at(static_cast<std::size_t>(id.value));
 }
 
 std::vector<CellIndex> MeshView::CellNeighbours(CellIndex id) const {
-  MOHIDNG_TRACE_SCOPE("MeshView::CellNeighbours");
+  MOHIDNG_TRACE_CLASS(MeshView::ClassId(), "CellNeighbours");
   std::vector<CellIndex> neighbours;
   for (const auto& face : faces_) {
     if (face.owner.value == id.value && mohidng::IsValid(face.neighbour)) {
@@ -50,7 +50,7 @@ std::vector<CellIndex> MeshView::CellNeighbours(CellIndex id) const {
 bool MeshView::IsBoundaryFace(const Face2D& face) const { return !mohidng::IsValid(face.neighbour); }
 
 bool MeshView::IsValid() const {
-  MOHIDNG_TRACE_SCOPE("MeshView::IsValid");
+  MOHIDNG_TRACE_CLASS(MeshView::ClassId(), "IsValid");
   if (metadata_.dimension != 2) {
     return false;
   }

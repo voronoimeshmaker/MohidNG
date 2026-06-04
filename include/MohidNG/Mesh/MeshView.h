@@ -1,14 +1,19 @@
 #pragma once
 
 #include <span>
+#include <string_view>
 #include <vector>
 
-#include "MohidNG/Mesh/MeshTypes.h"
+#include <MohidNG/Core/ID.h>
+#include <MohidNG/Mesh/MeshTypes.h>
+
 
 namespace mohidng {
 
 class MeshView {
  public:
+  DefineIdentity("MohidNG.Mesh.MeshView")
+
   MeshView() = default;
   MeshView(std::vector<Node2D> nodes, std::vector<Cell2D> cells, std::vector<Face2D> faces,
            std::vector<BoundaryPatch> patches, MeshMetadata metadata);

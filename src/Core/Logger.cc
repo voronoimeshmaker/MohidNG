@@ -1,8 +1,10 @@
-#include "MohidNG/Core/Logger.h"
-
-#include <ostream>
 #include <sstream>
 #include <utility>
+
+#include <ostream>
+
+#include <MohidNG/Core/Logger.h>
+
 
 namespace mohidng {
 
@@ -65,6 +67,15 @@ void ClearTrace() {
 #ifndef NDEBUG
   trace_stack.clear();
 #endif
+}
+
+std::string MakeTraceScopeName(std::string_view class_id, std::string_view method) {
+  std::string name(class_id);
+  if (!method.empty()) {
+    name += "::";
+    name += method;
+  }
+  return name;
 }
 
 void SetTraceLoggingEnabled(bool enabled) {

@@ -26,7 +26,7 @@ foreach(test_source IN LISTS MOHIDNG_TEST_SOURCES)
   target_link_libraries("${test_target}" PRIVATE MohidNG::MohidNG)
 
   set(test_input "${MOHIDNG_BOOTSTRAP_MESH}")
-  if(test_target STREQUAL "tst_voronoi_mesh_package")
+  if(test_target STREQUAL "tst_voronoi_mesh_package" OR test_target STREQUAL "tst_integration_gradient" OR test_target STREQUAL "tst_gradient_methods")
     set(test_input "${MOHIDNG_BOOTSTRAP_PACKAGE}")
   endif()
 

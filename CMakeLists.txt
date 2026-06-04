@@ -12,6 +12,7 @@ option(MOHIDNG_BUILD_DOCS "Build Mohid-NG documentation" OFF)
 include(cmake/MohidNGCompilerOptions.cmake)
 
 find_package(HDF5 REQUIRED COMPONENTS C)
+find_package(yaml-cpp REQUIRED)
 
 file(GLOB_RECURSE MOHIDNG_LIBRARY_SOURCES
   CONFIGURE_DEPENDS

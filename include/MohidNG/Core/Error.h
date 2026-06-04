@@ -2,10 +2,14 @@
 
 #include <exception>
 #include <map>
+#include <source_location>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <MohidNG/Core/ID.h>
+
 
 namespace mohidng {
 
@@ -18,22 +22,41 @@ struct ErrorDefinition {
   std::map<std::string, std::string> messages;
 };
 
+struct ErrorContext {
+  ClassIdentity identity{};
+  std::source_location location = std::source_location::current();
+};
+
+[[nodiscard]] bool HasClassIdentity(const ErrorContext& context);
+[[nodiscard]] ErrorContext MakeErrorContext(
+    const std::source_location& location = std::source_location::current());
+[[nodiscard]] ErrorContext MakeErrorContext(
+    ClassIdentity identity, const std::source_location& location = std::source_location::current());
+
 class Error {
  public:
-  explicit Error(std::string code, std::string detail = {});
+  DefineIdentity("MohidNG.Core.Error")
+
+  explicit Error(std::string code, std::string detail = {},
+                 const std::source_location& location = std::source_location::current());
+  Error(std::string code, std::string detail, ErrorContext context);
 
   const std::string& Code() const noexcept;
   const std::string& Detail() const noexcept;
+  const ErrorContext& Context() const noexcept;
   std::string Message() const;
   std::string Message(std::string_view language) const;
 
  private:
   std::string code_;
   std::string detail_;
+  ErrorContext context_;
 };
 
 class MohidNgException : public std::runtime_error {
  public:
+  DefineIdentity("MohidNG.Core.MohidNgException")
+
   explicit MohidNgException(Error error);
 
   const Error& GetError() const noexcept;
@@ -55,7 +78,14 @@ std::string ErrorMessage(std::string_view code, std::string_view language);
 
 [[noreturn]] void Raise(Error error);
 void Require(bool condition, const Error& error);
-void Require(bool condition, std::string code, std::string detail = {});
-void RequireMessage(bool condition, std::string detail);
+void Require(bool condition, std::string code, std::string detail = {},
+             const std::source_location& location = std::source_location::current());
+void Require(bool condition, std::string code, std::string detail, ErrorContext context);
+void RequireMessage(bool condition, std::string detail,
+                    const std::source_location& location = std::source_location::current());
 
 }  // namespace mohidng
+
+#define RequireClass(class_type, condition, code, detail) \
+  ::mohidng::Require(condition, code, detail, \
+                     ::mohidng::MakeErrorContext(class_type::kIdentity, std::source_location::current()))

@@ -1,11 +1,11 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
+#include <MohidNG/Core/Types.h>
+
 
 namespace mohidng {
 
-using IndexValue = std::int64_t;
+using IndexValue = Integer;
 
 struct CellIndex {
   IndexValue value = -1;

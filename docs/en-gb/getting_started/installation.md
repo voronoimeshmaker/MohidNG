@@ -19,5 +19,5 @@ For documentation only:
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-docs.txt
-sphinx-build -b html docs build/html
+sphinx-build -b html docs docs/html
 ```

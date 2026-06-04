@@ -13,3 +13,5 @@ cmake-build-*/
 __pycache__/
 .pytest_cache/
 docs/_build/
+
+docs/html/

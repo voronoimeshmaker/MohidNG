@@ -9,8 +9,8 @@
       <p class="mohidng-lead">A new-generation environmental modelling platform for hydrodynamics, transport and coupled coastal, riverine and watershed systems.</p>
       <div class="mohidng-hero-actions" aria-label="Documentation entry points">
         <a class="mohidng-button primary" href="en-gb/index.html">English</a>
-        <a class="mohidng-button" href="pt-br/index.html">PortuguÃªs do Brasil</a>
-        <a class="mohidng-button" href="pt-pt/index.html">PortuguÃªs de Portugal</a>
+        <a class="mohidng-button" href="pt-br/index.html">Português do Brasil</a>
+        <a class="mohidng-button" href="pt-pt/index.html">Português de Portugal</a>
       </div>
     </div>
     <div class="mohidng-hero-visual" aria-label="Mohid-NG identity and workflow">
@@ -57,27 +57,27 @@ Open English documentation
 ```
 :::
 
-:::{grid-item-card} PortuguÃªs do Brasil
+:::{grid-item-card} Português do Brasil
 :class-card: mohid-card
-Acesse a documentaÃ§Ã£o brasileira com visÃ£o geral, primeiros passos, teoria e desenvolvimento.
+Acesse a documentação brasileira com visão geral, primeiros passos, teoria e desenvolvimento.
 
 ```{button-ref} pt-br/index
 :ref-type: doc
 :color: primary
 :expand:
-Abrir documentaÃ§Ã£o brasileira
+Abrir documentação brasileira
 ```
 :::
 
-:::{grid-item-card} PortuguÃªs de Portugal
+:::{grid-item-card} Português de Portugal
 :class-card: mohid-card
-Aceda Ã  documentaÃ§Ã£o portuguesa com enquadramento, primeiros passos, teoria e desenvolvimento.
+Aceda à documentação portuguesa com enquadramento, primeiros passos, teoria e desenvolvimento.
 
 ```{button-ref} pt-pt/index
 :ref-type: doc
 :color: primary
 :expand:
-Abrir documentaÃ§Ã£o portuguesa
+Abrir documentação portuguesa
 ```
 :::
 
@@ -103,20 +103,20 @@ The bootstrap gate is intentionally concrete: configure, build, run CTest, valid
   </div>
   <div class="logo-card">
     <img class="institution-logo" src="_static/logos/iprj-placeholder.svg" alt="IPRJ logo placeholder" />
-    <strong>Instituto PolitÃ©cnico, IPRJ/UERJ</strong>
+    <strong>Instituto Politécnico, IPRJ/UERJ</strong>
   </div>
 </div>
 ```
 
-Mohid-NG is currently developed at the Instituto PolitÃ©cnico, a unit of the Universidade do Estado do Rio de Janeiro, Brazil. Contact: [mohidng@hotmail](mailto:mohidng@hotmail). GitHub: [github.com/mohidng](https://github.com/mohidng).
+Mohid-NG is currently developed at the Instituto Politécnico, a unit of the Universidade do Estado do Rio de Janeiro, Brazil. Contact: [mohidng@hotmail](mailto:mohidng@hotmail). GitHub: [github.com/mohidng](https://github.com/mohidng).
 
 ```{toctree}
 :hidden:
 :maxdepth: 2
 
 English <en-gb/index>
-PortuguÃªs do Brasil <pt-br/index>
-PortuguÃªs de Portugal <pt-pt/index>
+Português do Brasil <pt-br/index>
+Português de Portugal <pt-pt/index>
 design_system
 developer/startup_plan
 examples/examples_policy

@@ -47,7 +47,7 @@ All mesh-related implementation belongs to VoronoiMeshMaker: mesh generation, ge
 
 ## Participating institution
 
-Mohid-NG is currently developed at the Universidade do Estado do Rio de Janeiro (UERJ), through Instituto PolitÃ©cnico (IPRJ/UERJ).
+Mohid-NG is currently developed at the Universidade do Estado do Rio de Janeiro (UERJ), through Instituto Politécnico (IPRJ/UERJ).
 
 ```{toctree}
 :maxdepth: 2

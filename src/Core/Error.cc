@@ -1,10 +1,11 @@
-#include "MohidNG/Core/Error.h"
-
+#include <filesystem>
 #include <mutex>
 #include <sstream>
 #include <utility>
 
-#include "MohidNG/Core/Logger.h"
+#include <MohidNG/Core/Error.h>
+#include <MohidNG/Core/Logger.h>
+
 
 namespace mohidng {
 namespace {
@@ -36,6 +37,21 @@ void RegisterBuiltinErrors() {
                                      {{std::string(kLanguagePtBr), "Requisito interno nao satisfeito."},
                                       {std::string(kLanguagePtPt), "Requisito interno nao satisfeito."},
                                       {std::string(kLanguageEnGb), "Internal requirement not satisfied."}}});
+  Registry().emplace("cli.invalid_arguments",
+                     ErrorDefinition{"cli.invalid_arguments",
+                                     {{std::string(kLanguagePtBr), "Argumentos de linha de comando invalidos."},
+                                      {std::string(kLanguagePtPt), "Argumentos de linha de comando invalidos."},
+                                      {std::string(kLanguageEnGb), "Invalid command-line arguments."}}});
+  Registry().emplace("case.file_not_found",
+                     ErrorDefinition{"case.file_not_found",
+                                     {{std::string(kLanguagePtBr), "Arquivo de caso nao encontrado."},
+                                      {std::string(kLanguagePtPt), "Ficheiro de caso nao encontrado."},
+                                      {std::string(kLanguageEnGb), "Case file not found."}}});
+  Registry().emplace("case.invalid_yaml",
+                     ErrorDefinition{"case.invalid_yaml",
+                                     {{std::string(kLanguagePtBr), "Arquivo YAML de caso invalido."},
+                                      {std::string(kLanguagePtPt), "Ficheiro YAML de caso invalido."},
+                                      {std::string(kLanguageEnGb), "Invalid YAML case file."}}});
   Registry().emplace("mesh.file_not_found",
                      ErrorDefinition{"mesh.file_not_found",
                                      {{std::string(kLanguagePtBr), "Arquivo de malha nao encontrado."},
@@ -61,6 +77,21 @@ void RegisterBuiltinErrors() {
                                      {{std::string(kLanguagePtBr), "Tamanho de campo incompativel."},
                                       {std::string(kLanguagePtPt), "Tamanho de campo incompativel."},
                                       {std::string(kLanguageEnGb), "Incompatible field size."}}});
+  Registry().emplace("field.invalid_name",
+                     ErrorDefinition{"field.invalid_name",
+                                     {{std::string(kLanguagePtBr), "Nome de campo invalido."},
+                                      {std::string(kLanguagePtPt), "Nome de campo invalido."},
+                                      {std::string(kLanguageEnGb), "Invalid field name."}}});
+  Registry().emplace("field.duplicate_name",
+                     ErrorDefinition{"field.duplicate_name",
+                                     {{std::string(kLanguagePtBr), "Nome de campo duplicado."},
+                                      {std::string(kLanguagePtPt), "Nome de campo duplicado."},
+                                      {std::string(kLanguageEnGb), "Duplicate field name."}}});
+  Registry().emplace("field.invalid_location",
+                     ErrorDefinition{"field.invalid_location",
+                                     {{std::string(kLanguagePtBr), "Localizacao de campo incompativel."},
+                                      {std::string(kLanguagePtPt), "Localizacao de campo incompativel."},
+                                      {std::string(kLanguageEnGb), "Incompatible field location."}}});
   Registry().emplace("numerics.unsupported_gradient_method",
                      ErrorDefinition{"numerics.unsupported_gradient_method",
                                      {{std::string(kLanguagePtBr), "Metodo de gradiente nao suportado."},
@@ -88,36 +119,78 @@ void RegisterBuiltinErrors() {
                                       {std::string(kLanguageEnGb), "Singular local least-squares system."}}});
 }
 
+const ErrorDefinition& DetailLabelDefinition() {
+  static const ErrorDefinition definition{
+      "core.detail_label",
+      {{std::string(kLanguagePtBr), "Detalhe"},
+       {std::string(kLanguagePtPt), "Pormenor"},
+       {std::string(kLanguageEnGb), "Detail"}}};
+  return definition;
+}
+
+const ErrorDefinition& UnknownErrorDefinition() {
+  static const ErrorDefinition definition{
+      "core.unregistered_error",
+      {{std::string(kLanguagePtBr), "Erro Mohid-NG nao cadastrado"},
+       {std::string(kLanguagePtPt), "Erro Mohid-NG nao registado"},
+       {std::string(kLanguageEnGb), "Unregistered Mohid-NG error"}}};
+  return definition;
+}
+
+std::string MessageFromDefinition(const ErrorDefinition& definition, std::string_view language) {
+  const auto exact = definition.messages.find(std::string(language));
+  if (exact != definition.messages.end()) {
+    return exact->second;
+  }
+  const auto pt_br = definition.messages.find(std::string(kLanguagePtBr));
+  if (pt_br != definition.messages.end()) {
+    return pt_br->second;
+  }
+  const auto en_gb = definition.messages.find(std::string(kLanguageEnGb));
+  if (en_gb != definition.messages.end()) {
+    return en_gb->second;
+  }
+  return definition.code;
+}
+
 std::string DetailLabel(std::string_view language) {
-  if (language == kLanguageEnGb) {
-    return "Detail";
-  }
-  if (language == kLanguagePtPt) {
-    return "Pormenor";
-  }
-  return "Detalhe";
+  return MessageFromDefinition(DetailLabelDefinition(), language);
 }
 
 std::string UnknownErrorMessage(std::string_view code, std::string_view language) {
   std::ostringstream out;
-  if (language == kLanguageEnGb) {
-    out << "Unregistered Mohid-NG error";
-  } else if (language == kLanguagePtPt) {
-    out << "Erro Mohid-NG nao registado";
-  } else {
-    out << "Erro Mohid-NG nao cadastrado";
-  }
-  out << " [" << code << "]";
+  out << MessageFromDefinition(UnknownErrorDefinition(), language) << " [" << code << "]";
   return out.str();
 }
 
 }  // namespace
 
-Error::Error(std::string code, std::string detail) : code_(std::move(code)), detail_(std::move(detail)) {}
+bool HasClassIdentity(const ErrorContext& context) { return !context.identity.id.empty(); }
+
+ErrorContext MakeErrorContext(const std::source_location& location) {
+  ErrorContext context;
+  context.location = location;
+  return context;
+}
+
+ErrorContext MakeErrorContext(ClassIdentity identity, const std::source_location& location) {
+  ErrorContext context;
+  context.identity = identity;
+  context.location = location;
+  return context;
+}
+
+Error::Error(std::string code, std::string detail, const std::source_location& location)
+    : Error(std::move(code), std::move(detail), MakeErrorContext(location)) {}
+
+Error::Error(std::string code, std::string detail, ErrorContext context)
+    : code_(std::move(code)), detail_(std::move(detail)), context_(context) {}
 
 const std::string& Error::Code() const noexcept { return code_; }
 
 const std::string& Error::Detail() const noexcept { return detail_; }
+
+const ErrorContext& Error::Context() const noexcept { return context_; }
 
 std::string Error::Message() const { return Message(GetMessageLanguage()); }
 
@@ -150,8 +223,20 @@ std::string MohidNgException::TraceAsText() const {
 std::string MohidNgException::BuildMessage(const Error& error, const std::vector<std::string>& trace) {
   std::ostringstream out;
   out << error.Message() << " [" << error.Code() << ']';
+
+  const auto& context = error.Context();
+  const std::filesystem::path source_path(context.location.file_name());
+  out << "\nContext:\n";
+  if (HasClassIdentity(context)) {
+    out << "  - class: " << context.identity.id << '\n';
+  }
+  out << "  - folder: " << source_path.parent_path().string() << '\n';
+  out << "  - file: " << source_path.filename().string() << '\n';
+  out << "  - line: " << context.location.line() << '\n';
+  out << "  - function: " << context.location.function_name() << '\n';
+
   if (!trace.empty()) {
-    out << "\nTrace:\n";
+    out << "Trace:\n";
     for (const auto& entry : trace) {
       out << "  - " << entry << '\n';
     }
@@ -190,18 +275,9 @@ std::string ErrorMessage(std::string_view code, std::string_view language) {
   if (it == registry.end()) {
     return UnknownErrorMessage(code, language);
   }
-  const auto& messages = it->second.messages;
-  const auto exact = messages.find(std::string(language));
-  if (exact != messages.end()) {
-    return exact->second;
-  }
-  const auto pt_br = messages.find(std::string(kLanguagePtBr));
-  if (pt_br != messages.end()) {
-    return pt_br->second;
-  }
-  const auto en_gb = messages.find(std::string(kLanguageEnGb));
-  if (en_gb != messages.end()) {
-    return en_gb->second;
+  const auto message = MessageFromDefinition(it->second, language);
+  if (!message.empty()) {
+    return message;
   }
   return UnknownErrorMessage(code, language);
 }
@@ -214,14 +290,20 @@ void Require(bool condition, const Error& error) {
   }
 }
 
-void Require(bool condition, std::string code, std::string detail) {
+void Require(bool condition, std::string code, std::string detail, const std::source_location& location) {
   if (!condition) {
-    Raise(Error(std::move(code), std::move(detail)));
+    Raise(Error(std::move(code), std::move(detail), location));
   }
 }
 
-void RequireMessage(bool condition, std::string detail) {
-  Require(condition, Error("core.requirement_failed", std::move(detail)));
+void Require(bool condition, std::string code, std::string detail, ErrorContext context) {
+  if (!condition) {
+    Raise(Error(std::move(code), std::move(detail), context));
+  }
+}
+
+void RequireMessage(bool condition, std::string detail, const std::source_location& location) {
+  Require(condition, "core.requirement_failed", std::move(detail), location);
 }
 
 }  // namespace mohidng

@@ -44,11 +44,34 @@ Completion record:
 
 ## Block 2, fields and operators
 
-Status: planned.
+Status: completed on 2026-06-04.
 
-Goal: allocate fields and compute basic finite-volume operators.
+Goal: allocate fields and compute basic finite-volume field infrastructure and gradient operators.
 
-Gate: constant fields have zero gradient, linear fields have exact gradients on the bootstrap mesh, conservative operator tests pass, and field/operator APIs remain independent of PETSc, Trilinos, HDF5, GDAL, CGAL and VoronoiMeshMaker implementation types.
+Gate: scalar and vector fields can be allocated at mesh locations, custom field locations remain extensible without central enums, constant fields have zero gradient, linear fields have exact gradients on the bootstrap and rectangular-domain meshes, gradient methods are extensible through registry/factory mechanisms, examples are visible and downloadable from the web documentation, and field/operator APIs remain independent of PETSc, Trilinos, HDF5, GDAL, CGAL and VoronoiMeshMaker implementation types.
+
+Completion record:
+
+- Field, FieldSet and open FieldLocation infrastructure are implemented without a central location enum.
+- Core Types and Constants headers define Real, Size, Integer, kPi and project numerical tolerances.
+- Class identity support is provided through Core/ID.h using local DefineIdentity declarations instead of central class enums.
+- Error diagnostics include source folder, file, line and function; class-owned checks can report the class identity through RequireClass.
+- Weighted least-squares and classical Green-Gauss gradient methods are separated under Numerics/Gradient and registered through factory-style builders.
+- Gradient tests cover constant-field zero gradients, exact linear-field gradients, method registration and custom weighting policies.
+- The rectangular-domain example reads RectangularDomainGradient.ini, creates a 2-D rectangular domain and mesh, defines a linear field and verifies the reconstructed gradient.
+- The examples page renders source files with literalinclude and provides download links for the example .cc files and RectangularDomainGradient.ini.
+- Include style, comment style and Mohid-NG angle-bracket include rules are documented and checked.
+- Debug and Release CTest runs pass with the Block 2 field and gradient tests.
+- The documentation design-system check, trilingual-docs check and Sphinx HTML build pass.
+
+Deferred to Block 3:
+
+- Conservative operator and mass-conservation diagnostics were intentionally moved to the first physical-equation block, where a transported quantity and conservation report exist.
+
+Implementation note:
+
+- Gradient methodologies may be rewritten from the VoroGradToolkit concepts and the project gradient-reconstruction manuscript for Mohid-NG needs, but Mohid-NG keeps its own implementation, naming, tests and public API.
+- Gradient methods must be extensible through traits, policies or registry/factory mechanisms, not a central enum that must be edited whenever a method is added.
 
 ## Block 3, first physical equation
 

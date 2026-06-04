@@ -2,7 +2,7 @@ from pathlib import Path
 
 project = "Mohid-NG"
 copyright = "2026, Universidade do Estado do Rio de Janeiro"
-author = "Instituto PolitÃƒÂ©cnico, Universidade do Estado do Rio de Janeiro"
+author = "Instituto Politécnico, Universidade do Estado do Rio de Janeiro"
 release = "0.1.0"
 
 extensions = [
@@ -25,7 +25,7 @@ source_suffix = {
 
 master_doc = "index"
 language = "en"
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "html", "Thumbs.db", ".DS_Store"]
 
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
