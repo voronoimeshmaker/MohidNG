@@ -19,13 +19,18 @@ Mohid-NG should prefer external dependencies as system packages, CMake packages,
 
 The Python documentation dependencies are listed in `requirements-docs.txt` and installed into a local virtual environment when building documentation locally.
 
+## Current scientific/HPC dependencies
+
+| Component | Current role | Licence notes | Mohid-NG policy |
+| --- | --- | --- | --- |
+| HDF5 | Block 1 Voronoi mesh package reader | BSD-style HDF5 licence | External system dependency; do not vendor; do not expose HDF5 types in public physical-model APIs. |
+
 ## Expected future scientific/HPC dependencies
 
 | Component | Expected role | Licence notes | Mohid-NG policy |
 | --- | --- | --- | --- |
 | PETSc | Optional linear/nonlinear solver backend | BSD-2-Clause | Optional backend; do not expose PETSc types in public physical-model APIs. |
 | Trilinos | Optional solver/preconditioner backend | Mixed, commonly BSD-3-Clause and some LGPL components | Optional backend; package selection must be reviewed before binary distribution. |
-| HDF5 | Mesh/package and data storage | BSD-style HDF5 licence | External dependency; do not vendor. |
 | NetCDF | Scientific data I/O | Permissive/BSD-style licence | External dependency; do not vendor. |
 | VoronoiMeshMaker | Voronoi mesh-package producer | Project-specific; to be reviewed | Separate producer tool; Mohid-NG consumes validated packages. |
 | CGAL | VoronoiMeshMaker implementation dependency | Mixed open-source/commercial options | Must remain outside Mohid-NG core and public APIs. |

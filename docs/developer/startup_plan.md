@@ -23,11 +23,24 @@ Completion record:
 
 ## Block 1, Voronoi mesh contract
 
-Status: planned.
+Status: completed on 2026-06-04.
 
 Goal: read a minimal Voronoi mesh package and validate topology and geometry.
 
 Gate: a simple 2-D Voronoi mesh is read, cell-face-cell connectivity is validated, boundary patches are recognised, mesh metadata is checked, and invalid packages produce clear diagnostics without turning Mohid-NG into a mesh generator.
+
+Completion record:
+
+- HDF5 is the current Block 1 mesh-package dependency and is linked through CMake.
+- A minimal 2-D Voronoi mesh package fixture is stored in data/meshes/square_2x2.mngpkg.h5.
+- Mohid-NG reads schema version, producer, dimension, CRS note, nodes, cells, faces and boundary patches from the package.
+- The reader validates topology, geometry, boundary patch consistency and metadata before constructing MeshView.
+- Invalid permanent fixtures cover negative cell area and out-of-range face owner diagnostics.
+- The plain-text bootstrap mesh is rejected by the HDF5 package reader.
+- Debug and Release CTest runs pass with the Block 1 reader test.
+- The new example follows the exe_* convention and runs through make run_read_voronoi_package.
+- The new test follows the tst_* convention and runs through make run_voronoi_mesh_package.
+- Mohid-NG remains a package consumer and does not implement Voronoi generation, remeshing or connectivity reconstruction.
 
 ## Block 2, fields and operators
 

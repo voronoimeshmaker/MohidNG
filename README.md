@@ -39,6 +39,8 @@ Mohid-NG is licensed under the Apache License, Version 2.0 (Apache-2.0). Third-p
 
 ## Build
 
+HDF5 development libraries are required for the Block 1 Voronoi mesh package reader. On Ubuntu, install `libhdf5-dev`.
+
 ```bash
 cmake --preset debug
 cmake --build --preset debug

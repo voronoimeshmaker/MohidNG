@@ -42,6 +42,8 @@ struct BoundaryPatch {
 
 struct MeshMetadata {
   int dimension = 2;
+  std::string schema_version = "bootstrap-text/0.1";
+  std::string producer = "Mohid-NG bootstrap";
   std::string source = "bootstrap plain-text mesh";
   std::string coordinate_reference_system = "local Cartesian";
   std::string note = "Temporary bootstrap format. Final mesh packages are owned by VoronoiMeshMaker.";
