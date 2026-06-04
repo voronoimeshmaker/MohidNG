@@ -2,7 +2,7 @@ from pathlib import Path
 
 project = "Mohid-NG"
 copyright = "2026, Universidade do Estado do Rio de Janeiro"
-author = "Instituto Politécnico, Universidade do Estado do Rio de Janeiro"
+author = "Instituto PolitÃƒÂ©cnico, Universidade do Estado do Rio de Janeiro"
 release = "0.1.0"
 
 extensions = [
@@ -30,14 +30,14 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 html_css_files = ["css/mohid-ng.css"]
-html_favicon = "_static/favicon.svg"
-html_logo = "_static/logo/mohid-ng-logo.svg"
+html_favicon = "_static/logo/mohid-ng-logo.png"
+html_logo = "_static/logo/mohid-ng-logo.png"
 
 html_theme_options = {
     "logo": {
         "text": "Mohid-NG",
-        "image_light": "_static/logo/mohid-ng-logo.svg",
-        "image_dark": "_static/logo/mohid-ng-logo-dark.svg",
+        "image_light": "_static/logo/mohid-ng-logo.png",
+        "image_dark": "_static/logo/mohid-ng-logo.png",
     },
     "github_url": "https://github.com/mohidng",
     "navbar_align": "left",

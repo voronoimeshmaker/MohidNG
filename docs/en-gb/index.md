@@ -34,7 +34,7 @@ Follow the implementation architecture, coding standard, tests and validation ga
 ::::
 
 ```{raw} html
-<div class="workflow-line">GIS data → VoronoiMeshMaker → Voronoi mesh package → Mohid-NG → validation → output</div>
+<div class="workflow-line">GIS data â†’ VoronoiMeshMaker â†’ Voronoi mesh package â†’ Mohid-NG â†’ validation â†’ output</div>
 ```
 
 ```{admonition} VoronoiMeshMaker responsibility
@@ -47,7 +47,7 @@ All mesh-related implementation belongs to VoronoiMeshMaker: mesh generation, ge
 
 ## Participating institution
 
-Mohid-NG is currently developed at the Universidade do Estado do Rio de Janeiro (UERJ), through Instituto Politécnico (IPRJ/UERJ).
+Mohid-NG is currently developed at the Universidade do Estado do Rio de Janeiro (UERJ), through Instituto PolitÃ©cnico (IPRJ/UERJ).
 
 ```{toctree}
 :maxdepth: 2
@@ -122,6 +122,7 @@ developer/coding_standard
 developer/implementation_architecture
 developer/testing
 developer/performance
+developer/licensing
 ```
 
 ```{toctree}

@@ -33,6 +33,10 @@ VoronoiMeshMaker owns every mesh-related implementation concern:
 
 Mohid-NG consumes validated Voronoi mesh packages and uses them for physical modelling, finite-volume operators, fields, solvers, diagnostics, I/O and validation.
 
+## Licence
+
+Mohid-NG is licensed under the Apache License, Version 2.0 (Apache-2.0). Third-party dependency policy and notices are tracked in THIRD_PARTY_NOTICES.md.
+
 ## Build
 
 ```bash
@@ -59,6 +63,28 @@ make run_gradient_reconstruction
 CMake discovers examples and tests automatically. Add new examples as `examples/.../exe_name.cc` and new tests as `tests/.../tst_name.cc`.
 
 From `build/debug`, `exe_case1.cc` can be built and run with `make run_case1`. Test files follow the same rule: `tst_gradient.cc` creates `make run_gradient`.
+
+## Documentation
+
+```bash
+python3 tools/check_design_system.py
+python3 tools/check_trilingual_docs.py
+build/docs-venv/bin/sphinx-build -b html docs build/docs/html -W --keep-going
+```
+
+## Error, Exception and Trace Policy
+
+Mohid-NG has its own error, exception and flow-trace subsystem. Errors use flexible textual codes, not enums, and support localised messages in `pt-br`, `pt-pt` and `en-gb`. The default language is `pt-br`. `Error` and `MohidNgException` are separate concepts. Debug builds capture the execution-flow trace at the throw site; release builds compile this trace mechanism as a no-op through `NDEBUG`.
+
+## Web Publication Options
+
+The documentation site is generated with Sphinx under uild/docs/html. Publication options are:
+
+- ReadTheDocs: best for versioned documentation and automatic builds from GitHub.
+- GitHub Pages: simple static hosting directly from a repository branch or Actions artifact.
+- Institutional server: useful when UERJ/IPRJ wants to host an official project page.
+- Local HTML only: acceptable during Block 0 while the public home and logos are still being refined.
+
 ## Project contact
 
 Email: mohidng@hotmail
