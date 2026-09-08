@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MPL-2.0
+include("${CMAKE_CURRENT_LIST_DIR}/testing/MohidNGPrograms.cmake")
+
 set(MOHIDNG_BOOTSTRAP_MESH
   ${PROJECT_SOURCE_DIR}/data/meshes/square_2x2.mngmesh
   CACHE FILEPATH "Bootstrap mesh used by example and test run targets")
@@ -10,11 +13,12 @@ set(MOHIDNG_RECTANGULAR_GRADIENT_CASE
 
 file(GLOB_RECURSE MOHIDNG_EXAMPLE_SOURCES
   CONFIGURE_DEPENDS
-  ${PROJECT_SOURCE_DIR}/examples/exe_*.cc)
+  "${PROJECT_SOURCE_DIR}/examples/exe_*.cc"
+  "${PROJECT_SOURCE_DIR}/examples/exe_*.cpp")
 list(SORT MOHIDNG_EXAMPLE_SOURCES)
 
 if(NOT MOHIDNG_EXAMPLE_SOURCES)
-  message(STATUS "[MohidNG examples] No exe_*.cc files found")
+  message(STATUS "[MohidNG examples] No exe_*.cc or exe_*.cpp files found")
   return()
 endif()
 
@@ -23,48 +27,31 @@ add_custom_target(run_all_examples)
 
 foreach(example_source IN LISTS MOHIDNG_EXAMPLE_SOURCES)
   get_filename_component(example_target "${example_source}" NAME_WE)
-  string(REGEX REPLACE "^exe_" "" example_run_name "${example_target}")
-
-  add_executable("${example_target}" "${example_source}")
-  target_link_libraries("${example_target}" PRIVATE MohidNG::MohidNG)
+  set(example_libraries "")
+  set(example_include_directories "")
   if(example_target STREQUAL "exe_rectangular_domain_gradient")
     if(TARGET yaml-cpp::yaml-cpp)
-      target_link_libraries("${example_target}" PRIVATE yaml-cpp::yaml-cpp)
+      list(APPEND example_libraries yaml-cpp::yaml-cpp)
     elseif(TARGET yaml-cpp)
-      target_link_libraries("${example_target}" PRIVATE yaml-cpp)
+      list(APPEND example_libraries yaml-cpp)
     else()
-      target_include_directories("${example_target}" PRIVATE ${YAML_CPP_INCLUDE_DIRS})
-      target_link_libraries("${example_target}" PRIVATE ${YAML_CPP_LIBRARIES})
+      list(APPEND example_include_directories ${YAML_CPP_INCLUDE_DIRS})
+      list(APPEND example_libraries ${YAML_CPP_LIBRARIES})
     endif()
   endif()
 
-  set(example_input "${MOHIDNG_BOOTSTRAP_MESH}")
-  set(example_has_input TRUE)
-  if(example_target STREQUAL "exe_read_voronoi_package")
+  set(example_input "")
+  if(example_target STREQUAL "exe_read_mesh" OR example_target STREQUAL "exe_cell_field"
+      OR example_target STREQUAL "exe_gradient_reconstruction")
+    set(example_input "${MOHIDNG_BOOTSTRAP_MESH}")
+  elseif(example_target STREQUAL "exe_read_voronoi_package")
     set(example_input "${MOHIDNG_BOOTSTRAP_PACKAGE}")
   elseif(example_target STREQUAL "exe_rectangular_domain_gradient")
     set(example_input "${MOHIDNG_RECTANGULAR_GRADIENT_CASE}")
   endif()
 
-  add_dependencies(examples "${example_target}")
-  if(example_has_input)
-    add_test(NAME "${example_target}"
-      COMMAND "${example_target}" "${example_input}")
-
-    add_custom_target("run_${example_run_name}"
-      COMMAND "${example_target}" "${example_input}"
-      DEPENDS "${example_target}"
-      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-      COMMENT "Running ${example_target}")
-  else()
-    add_test(NAME "${example_target}"
-      COMMAND "${example_target}")
-
-    add_custom_target("run_${example_run_name}"
-      COMMAND "${example_target}"
-      DEPENDS "${example_target}"
-      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-      COMMENT "Running ${example_target}")
-  endif()
-  add_dependencies(run_all_examples "run_${example_run_name}")
+  mohidng_add_program("${example_source}" examples
+    ARGUMENTS ${example_input}
+    LIBRARIES ${example_libraries}
+    INCLUDE_DIRECTORIES ${example_include_directories})
 endforeach()
