@@ -6,7 +6,7 @@ Status: completed on 2026-06-04.
 
 Goal: create a buildable, testable and documented repository.
 
-Gate: CMake configures, examples build, tests run, documentation skeleton exists, the documentation design system is validated, trilingual documentation entry points are present, the Sphinx site builds without warnings, and the repository has an explicit licence and third-party dependency policy.
+Gate: CMake configures, examples build, tests run, documentation skeleton exists, the documentation design system is validated, bilingual documentation entry points are present, the Sphinx site builds without warnings, and the repository has an explicit licence and third-party dependency policy.
 
 Completion record:
 
@@ -16,7 +16,7 @@ Completion record:
 - Examples follow the exe_* convention and can be run from the build directory through make run_* targets.
 - Tests follow the tst_* convention and can be run from the build directory through make run_* targets.
 - The documentation design system check passes.
-- The trilingual documentation check passes.
+- The bilingual documentation check passes.
 - The Sphinx HTML documentation builds with -W --keep-going.
 - Apache-2.0 is the selected project licence.
 - THIRD_PARTY_NOTICES.md records the dependency policy.
@@ -62,7 +62,7 @@ Completion record:
 - The examples page renders source files with literalinclude and provides download links for the example .cc files and RectangularDomainGradient.ini.
 - Include style, comment style and Mohid-NG angle-bracket include rules are documented and checked.
 - Debug and Release CTest runs pass with the Block 2 field and gradient tests.
-- The documentation design-system check, trilingual-docs check and Sphinx HTML build pass.
+- The documentation design-system check, bilingual-docs check and Sphinx HTML build pass.
 
 Deferred to Block 3:
 

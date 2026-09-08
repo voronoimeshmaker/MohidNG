@@ -1,23 +1,28 @@
-# Licensing and third-party dependencies
+# Dependency treatment
 
-Mohid-NG is distributed under the Apache License, Version 2.0. The SPDX identifier is `Apache-2.0`.
+Mohid-NG uses and is expected to use a range of external libraries,
+development tools and optional scientific/HPC backends.
 
-This choice is intended to keep the core usable in academic, public-sector and industrial workflows while preserving an explicit patent grant. The project should remain dependency-light in the core and should avoid embedding third-party source code.
+The authoritative inventory of third-party software actually used,
+distributed or required by the project is maintained in
+`THIRD_PARTY_NOTICES.md` and shall evolve with the implementation.
 
-## Policy
+Dependencies shall be classified, where applicable, as:
 
-- The Mohid-NG core is Apache-2.0.
-- Documentation and small project-authored examples follow the repository licence unless a file states otherwise.
-- External dependencies should be discovered through CMake, package managers or system installations.
-- Optional HPC/scientific integrations should be isolated behind backend targets.
-- GPL-only dependencies should not enter the core.
-- LGPL dependencies require case-by-case review before binary redistribution.
-- Upstream copyright notices and licence texts must be preserved for copied or adapted third-party code.
+- direct runtime or build dependencies;
+- optional scientific or HPC backends;
+- solver, partitioning or numerical packages reached through another dependency;
+- testing and development dependencies;
+- documentation dependencies; and
+- transitive dependencies relevant to redistribution or licence compliance.
 
-## Expected dependency treatment
+Each third-party component remains governed by its own licence.
 
-PETSc, HDF5 and NetCDF are expected to fit the project as external dependencies with permissive licences. Trilinos requires package-level review because the Trilinos project contains packages under different licences, including BSD-style and LGPL components.
+The licence of a parent dependency shall not be assumed to cover packages
+that it downloads, builds, links or otherwise makes available. Relevant
+transitive and optional dependencies shall therefore be reviewed separately
+when they become part of a supported Mohid-NG configuration.
 
-VoronoiMeshMaker remains a separate mesh-package producer. Any dependency needed for mesh generation, remeshing, generator redistribution, mesh-quality metrics, mesh hierarchy construction or GIS-driven mesh preparation belongs to VoronoiMeshMaker or external workflow tools, not to the Mohid-NG core.
-
-See `THIRD_PARTY_NOTICES.md` at the repository root for the current third-party dependency policy and notice table.
+New dependencies shall be added to `THIRD_PARTY_NOTICES.md` when adopted,
+including their role, licence, integration mode and any redistribution or
+compatibility considerations relevant to Mohid-NG.

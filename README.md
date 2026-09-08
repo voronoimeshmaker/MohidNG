@@ -70,7 +70,7 @@ From `build/debug`, `exe_case1.cc` can be built and run with `make run_case1`. T
 
 ```bash
 python3 tools/check_design_system.py
-python3 tools/check_trilingual_docs.py
+python3 tools/check_bilingual_docs.py
 build/docs-venv/bin/sphinx-build -b html docs docs/html -W --keep-going
 ```
 

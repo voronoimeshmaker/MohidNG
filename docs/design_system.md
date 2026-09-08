@@ -126,10 +126,10 @@ The design system is checked by:
 python tools/check_design_system.py
 ```
 
-The trilingual documentation entry points are checked by:
+The bilingual documentation entry points are checked by:
 
 ```bash
-python tools/check_trilingual_docs.py
+python tools/check_bilingual_docs.py
 ```
 
 The Block 0 completion gate requires these scripts to pass, in addition to the C++ build, C++ tests and Sphinx documentation build.

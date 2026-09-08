@@ -13,21 +13,25 @@
 
 :::{grid-item-card} Executar um caso
 :class-card: mohid-card
+
 Instale as ferramentas, seleccione um pacote de malha Voronoi, configure o caso e execute o Mohid-NG.
 :::
 
 :::{grid-item-card} Compreender as equações
 :class-card: mohid-card
+
 Consulte a formulação por volumes finitos, os campos, as fronteiras e os diagnósticos.
 :::
 
 :::{grid-item-card} Preparar dados Voronoi
 :class-card: mohid-card
+
 Use o VoronoiMeshMaker para gerar, adaptar, validar e empacotar todos os dados de malha Voronoi.
 :::
 
 :::{grid-item-card} Desenvolver o Mohid-NG
 :class-card: mohid-card
+
 Siga a arquitectura de implementação, a norma de código, os testes e os critérios de validação.
 :::
 
@@ -39,9 +43,9 @@ Siga a arquitectura de implementação, a norma de código, os testes e os crit�
 
 ```{admonition} Responsabilidade do VoronoiMeshMaker
 :class: voronoimeshmaker
+
 Toda a implementação relacionada com a malha pertence ao VoronoiMeshMaker: geração, redistribuição de pontos geradores, remeshing, reconstrução de conectividade, controlo de qualidade, hierarquias e adaptação de malha. O Mohid-NG consome pacotes de malha Voronoi validados.
 ```
-
 
 ## Instituição participante
 
@@ -79,4 +83,5 @@ theory/remeshing_conservation
 
 developer/architecture
 developer/coding_standard
+developer/licensing
 ```
