@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 
+#include "GradientBenchmark.h"
+
 #include <algorithm>
 #include <cmath>
-
-#include "GradientBenchmark.h"
 
 
 namespace mohidng::benchmarks::gradient {
@@ -12,22 +12,34 @@ namespace {
 
 // Adds one local Euclidean gradient error to the accumulated norms.
 //
-// L1 stores the sum of local errors until finalisation.
-// L2 stores the sum of squared local errors until finalisation.
-// Linf is updated directly as the maximum local error.
+// During accumulation:
+//
+//   L1   stores the sum of local errors;
+//   L2   stores the sum of squared local errors;
+//   Linf stores the maximum local error.
+//
+// L1 and L2 are normalised after all cells have been processed.
 void AccumulateError(
     ErrorNorms& norms,
     Real error) {
 
-  norms.l1 += error;
-  norms.l2 += error * error;
-  norms.linf = std::max(norms.linf, error);
+  norms.l1 +=
+      error;
+
+  norms.l2 +=
+      error *
+      error;
+
+  norms.linf =
+      std::max(
+          norms.linf,
+          error);
 
   ++norms.count;
 }
 
 
-// Converts accumulated sums into the reported discrete norms.
+// Converts the accumulated sums into the reported discrete norms.
 //
 // The benchmark defines:
 //
@@ -36,9 +48,6 @@ void AccumulateError(
 //   L2   = root-mean-square of the local Euclidean errors
 //
 //   Linf = maximum local Euclidean error
-//
-// Linf is already complete during accumulation and therefore requires no
-// additional processing here.
 void FinaliseError(
     ErrorNorms& norms) {
 
@@ -47,13 +56,16 @@ void FinaliseError(
   }
 
   const Real count =
-      static_cast<Real>(norms.count);
+      static_cast<Real>(
+          norms.count);
 
-  norms.l1 /= count;
+  norms.l1 /=
+      count;
 
   norms.l2 =
       std::sqrt(
-          norms.l2 / count);
+          norms.l2 /
+          count);
 }
 
 
@@ -62,80 +74,55 @@ void FinaliseError(
     Real x,
     Real y) {
 
-  return std::sqrt(
-      x * x +
-      y * y);
+  return
+      std::sqrt(
+          x * x +
+          y * y);
 }
 
 }  // namespace
 
 
-// Computes the reconstruction error for the constant scalar field.
+// Computes gradient reconstruction errors against an analytical scalar case.
 //
-// The analytical field is:
+// For every finite-volume cell:
 //
-//   phi(x,y) = 3
+//   1. the exact analytical gradient is evaluated at the cell centre;
+//   2. the numerical and analytical gradients are subtracted;
+//   3. the Euclidean magnitude of that difference is calculated;
+//   4. the local error is accumulated into L1, L2 and Linf.
 //
-// and its exact gradient is:
+// The same implementation is therefore used for constant, linear and future
+// manufactured analytical scalar fields.
 //
-//   grad(phi) = (0,0)
-//
-// Therefore, the local error is simply the magnitude of the reconstructed
-// gradient at each cell.
-ErrorNorms ConstantGradientError(
-    const Vector2Field& gradient) {
+// The numerical gradient field is assumed to follow the same cell-index storage
+// convention as the MOHID-NG mesh and scalar-field infrastructure.
+ErrorNorms ComputeGradientError(
+    const MeshView& mesh,
+    const Vector2Field& numerical_gradient,
+    const AnalyticalScalarCase& analytical_case) {
 
   ErrorNorms norms;
 
-  for (Size i = 0;
-       i < gradient.Size();
-       ++i) {
+  for (const auto& cell :
+       mesh.Cells()) {
 
-    const Real error =
-        VectorNorm(
-            gradient[i].x,
-            gradient[i].y);
+    const Size index =
+        static_cast<Size>(
+            cell.id.value);
 
-    AccumulateError(
-        norms,
-        error);
-  }
-
-  FinaliseError(norms);
-
-  return norms;
-}
-
-
-// Computes the reconstruction error for the linear scalar field.
-//
-// The analytical field is:
-//
-//   phi(x,y) = 2x - 3y + 1
-//
-// and its exact gradient is:
-//
-//   grad(phi) = (2,-3)
-//
-// The local error is the Euclidean norm of the difference between the
-// reconstructed and exact gradients.
-ErrorNorms LinearGradientError(
-    const Vector2Field& gradient) {
-
-  constexpr Real exact_x = 2.0;
-  constexpr Real exact_y = -3.0;
-
-  ErrorNorms norms;
-
-  for (Size i = 0;
-       i < gradient.Size();
-       ++i) {
+    const Vec2 exact_gradient =
+        analytical_case.gradient(
+            cell.centre.x,
+            cell.centre.y);
 
     const Real error_x =
-        gradient[i].x - exact_x;
+        numerical_gradient[index].x -
+        exact_gradient.x;
 
     const Real error_y =
-        gradient[i].y - exact_y;
+        numerical_gradient[index].y -
+        exact_gradient.y;
 
     const Real error =
         VectorNorm(
@@ -147,7 +134,8 @@ ErrorNorms LinearGradientError(
         error);
   }
 
-  FinaliseError(norms);
+  FinaliseError(
+      norms);
 
   return norms;
 }

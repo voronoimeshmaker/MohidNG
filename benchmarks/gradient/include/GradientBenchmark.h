@@ -4,6 +4,8 @@
 #include <filesystem>
 #include <string>
 
+#include "BenchmarkTiming.h"
+
 #include <MohidNG/Core/Types.h>
 #include <MohidNG/Fields/Field.h>
 #include <MohidNG/Mesh/MeshView.h>
@@ -41,56 +43,84 @@ struct BenchmarkConfig {
 
 
 // =============================================================================
-// Timing
+// Analytical scalar cases
 // =============================================================================
 
-// Controls the statistical measurement procedure.
+// Function type used to evaluate an analytical scalar field.
 //
-// Each measured operation is executed repeatedly. Short operations are grouped
-// into blocks so that timer resolution does not dominate the measurement.
-//
-// Warm-up executions are performed before samples are collected.
-//
-// Sampling stops when either:
-//
-//   - the relative 95% confidence interval reaches the requested target; or
-//   - the maximum number of measurements is reached.
-//
-// The benchmark is executed serially.
-struct TimingSettings {
-  Size warmup = 5;
-  Size min_measurements = 30;
-  Size max_measurements = 500;
-  Size max_block_size = 10000;
+// The arguments are the Cartesian coordinates of the evaluation point.
+using ScalarValueFunction =
+    Real (*)(Real x, Real y);
 
-  Real target_block_seconds = 0.1;
-  Real target_ci95_relative = 0.02;
+
+// Function type used to evaluate the exact analytical gradient.
+//
+// The returned Vec2 contains:
+//
+//   x = d(phi)/dx
+//   y = d(phi)/dy
+using GradientValueFunction =
+    Vec2 (*)(Real x, Real y);
+
+
+// Describes one analytical scalar-field case used to verify a numerical
+// gradient reconstruction.
+//
+// A case contains:
+//
+//   - a human-readable name;
+//   - the analytical scalar value phi(x,y);
+//   - the exact analytical gradient grad(phi)(x,y).
+//
+// The numerical verification infrastructure is therefore independent of the
+// particular analytical expression being tested.
+struct AnalyticalScalarCase {
+  std::string name;
+
+  ScalarValueFunction value = nullptr;
+  GradientValueFunction gradient = nullptr;
 };
 
 
-// Stores the statistical result of one measured operation.
+// Returns the constant analytical case:
 //
-// All reported times correspond to one execution of the measured operation,
-// even when several executions are grouped into one timing block.
-struct TimingResult {
-  Size block_size = 1;
-  Size n_measurements = 0;
+//   phi(x,y) = 3
+//
+//   grad(phi) = (0,0)
+[[nodiscard]] AnalyticalScalarCase MakeConstantCase();
 
-  Real mean_time_s = 0.0;
-  Real std_time_s = 0.0;
-  Real median_time_s = 0.0;
-  Real iqr_time_s = 0.0;
-  Real min_time_s = 0.0;
-  Real max_time_s = 0.0;
 
-  Real coefficient_of_variation = 0.0;
-  Real ci95_half_width_s = 0.0;
-  Real ci95_relative = 0.0;
+// Returns the linear analytical case:
+//
+//   phi(x,y) = 2x - 3y + 1
+//
+//   grad(phi) = (2,-3)
+[[nodiscard]] AnalyticalScalarCase MakeLinearCase();
 
-  Real checksum = 0.0;
 
-  std::string status = "not_run";
-};
+// Samples an analytical scalar case at all finite-volume cell centres.
+//
+// The returned ScalarField follows the cell-index storage convention used by
+// the MOHID-NG field infrastructure.
+[[nodiscard]] ScalarField SampleScalarField(
+    const MeshView& mesh,
+    const AnalyticalScalarCase& analytical_case);
+
+
+// =============================================================================
+// Timing
+// =============================================================================
+//
+// TimingSettings, TimingResult and MeasureBenchmark() are provided by:
+//
+//   benchmarks/common/BenchmarkTiming.h
+//
+// They belong to:
+//
+//   mohidng::benchmarks
+//
+// because the timing infrastructure is shared by all MOHID-NG benchmarks.
+// =============================================================================
 
 
 // Measures access to the neighbour lists of all cells.
@@ -156,42 +186,32 @@ struct ErrorNorms {
 };
 
 
-// Computes error norms for the constant-field reconstruction.
+// Computes the reconstruction error against an arbitrary analytical scalar
+// case.
 //
-// The scalar field is:
-//
-//   phi(x,y) = 3
-//
-// and therefore:
-//
-//   grad(phi) = (0,0)
-[[nodiscard]] ErrorNorms ConstantGradientError(
-    const Vector2Field& gradient);
-
-
-// Computes error norms for the linear-field reconstruction.
-//
-// The scalar field is:
-//
-//   phi(x,y) = 2x - 3y + 1
-//
-// and therefore:
-//
-//   grad(phi) = (2,-3)
-[[nodiscard]] ErrorNorms LinearGradientError(
-    const Vector2Field& gradient);
+// The exact gradient is evaluated at each finite-volume cell centre.
+[[nodiscard]] ErrorNorms ComputeGradientError(
+    const MeshView& mesh,
+    const Vector2Field& numerical_gradient,
+    const AnalyticalScalarCase& analytical_case);
 
 
 // =============================================================================
-// Controlled fields
+// Transitional compatibility interface
 // =============================================================================
+//
+// The functions below are retained temporarily while GradientBenchmark.cpp is
+// migrated to AnalyticalScalarCase.
+//
+// Once all callers use MakeConstantCase(), MakeLinearCase(),
+// SampleScalarField() and ComputeGradientError(), these compatibility wrappers
+// will be removed.
+// =============================================================================
+
 
 // Creates the constant cell-centred scalar field:
 //
 //   phi(x,y) = 3
-//
-// This field provides a basic consistency check because its exact gradient
-// vanishes everywhere.
 [[nodiscard]] ScalarField MakeConstantField(
     const MeshView& mesh);
 
@@ -199,15 +219,18 @@ struct ErrorNorms {
 // Creates the linear cell-centred scalar field:
 //
 //   phi(x,y) = 2x - 3y + 1
-//
-// Its exact gradient is spatially uniform:
-//
-//   grad(phi) = (2,-3)
-//
-// A linear field provides a controlled test of first-order gradient
-// reconstruction.
 [[nodiscard]] ScalarField MakeLinearField(
     const MeshView& mesh);
+
+
+// Computes error norms for the constant-field reconstruction.
+[[nodiscard]] ErrorNorms ConstantGradientError(
+    const Vector2Field& gradient);
+
+
+// Computes error norms for the linear-field reconstruction.
+[[nodiscard]] ErrorNorms LinearGradientError(
+    const Vector2Field& gradient);
 
 
 // =============================================================================
@@ -279,7 +302,7 @@ void WriteErrorResults(
 //   4. configure gradient reconstruction;
 //   5. measure cell-neighbour access;
 //   6. measure gradient-workspace construction;
-//   7. build the controlled scalar fields;
+//   7. build analytical scalar fields;
 //   8. measure gradient application;
 //   9. evaluate numerical errors;
 //  10. write CSV results;

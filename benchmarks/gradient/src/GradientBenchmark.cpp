@@ -27,9 +27,10 @@ namespace {
 // benchmark execution does not depend on the current working directory.
 [[nodiscard]] std::filesystem::path BenchmarkDirectory() {
 
-  return std::filesystem::path(__FILE__)
-      .parent_path()
-      .parent_path();
+  return
+      std::filesystem::path(__FILE__)
+          .parent_path()
+          .parent_path();
 }
 
 }  // namespace
@@ -76,20 +77,8 @@ BenchmarkConfig MakeBenchmarkConfig() {
 //   2. construction of the gradient workspace;
 //   3. application of an already prepared gradient workspace.
 //
-// This separation is intentional.
-//
-// Cell-neighbour access is part of the mesh-connectivity infrastructure used
-// while preparing reconstruction stencils.
-//
-// Workspace construction is a preparatory operation that depends on mesh
-// geometry and the selected gradient reconstruction configuration.
-//
-// Gradient application uses an already prepared workspace and therefore
-// represents the cost that may be paid repeatedly while the mesh and
-// reconstruction configuration remain unchanged.
-//
-// Numerical correctness is evaluated independently with controlled constant
-// and linear scalar fields.
+// Numerical correctness is evaluated independently with analytical scalar
+// fields whose exact gradients are known.
 //
 // The benchmark is currently executed serially.
 int RunGradientBenchmark() {
@@ -135,13 +124,6 @@ int RunGradientBenchmark() {
   // ---------------------------------------------------------------------------
   // Gradient reconstruction configuration
   // ---------------------------------------------------------------------------
-  //
-  // GradientOptions currently supplies the default MOHID-NG reconstruction
-  // configuration.
-  //
-  // The selected method and weighting policy are recorded in the benchmark
-  // output through CellGradientDiagnostics.
-  // ---------------------------------------------------------------------------
 
   const GradientOptions gradient_options{};
 
@@ -150,14 +132,6 @@ int RunGradientBenchmark() {
 
   // ---------------------------------------------------------------------------
   // Cell-neighbour access
-  // ---------------------------------------------------------------------------
-  //
-  // This measurement exercises the public MeshView neighbour-access operation
-  // once for every cell in the mesh.
-  //
-  // It is measured independently from workspace construction so that changes
-  // in mesh-connectivity implementation can be evaluated separately from the
-  // remaining gradient preparation work.
   // ---------------------------------------------------------------------------
 
   const TimingResult neighbour_timing =
@@ -168,12 +142,6 @@ int RunGradientBenchmark() {
 
   // ---------------------------------------------------------------------------
   // Gradient-workspace construction
-  // ---------------------------------------------------------------------------
-  //
-  // BuildCellGradientWorkspace() prepares the per-cell reconstruction stencils
-  // and coefficients.
-  //
-  // The complete workspace-construction operation is timed here.
   // ---------------------------------------------------------------------------
 
   const TimingResult workspace_timing =
@@ -187,16 +155,8 @@ int RunGradientBenchmark() {
   // Persistent workspace
   // ---------------------------------------------------------------------------
   //
-  // A workspace is now constructed outside any timed region.
-  //
-  // This instance is used for:
-  //
-  //   - reporting diagnostics;
-  //   - measuring repeated gradient application;
-  //   - evaluating numerical error.
-  //
-  // Its construction time is therefore not included in the gradient
-  // application measurement.
+  // This workspace is constructed outside the timed region and reused for
+  // gradient application and numerical verification.
   // ---------------------------------------------------------------------------
 
   const CellGradientWorkspace workspace =
@@ -212,33 +172,43 @@ int RunGradientBenchmark() {
 
 
   // ---------------------------------------------------------------------------
-  // Controlled scalar fields
+  // Analytical verification cases
   // ---------------------------------------------------------------------------
   //
-  // Two fields are currently evaluated.
-  //
-  // Constant field:
+  // Constant:
   //
   //   phi(x,y) = 3
-  //
   //   grad(phi) = (0,0)
   //
-  // Linear field:
+  // Linear:
   //
   //   phi(x,y) = 2x - 3y + 1
-  //
   //   grad(phi) = (2,-3)
   //
-  // The linear field is also used for the gradient-application timing.
+  // The mathematical definition of each case now contains both the scalar
+  // value and its exact gradient.
+  // ---------------------------------------------------------------------------
+
+  const AnalyticalScalarCase constant_case =
+      MakeConstantCase();
+
+  const AnalyticalScalarCase linear_case =
+      MakeLinearCase();
+
+
+  // ---------------------------------------------------------------------------
+  // Sample analytical scalar fields
   // ---------------------------------------------------------------------------
 
   const ScalarField constant_field =
-      MakeConstantField(
-          mesh);
+      SampleScalarField(
+          mesh,
+          constant_case);
 
   const ScalarField linear_field =
-      MakeLinearField(
-          mesh);
+      SampleScalarField(
+          mesh,
+          linear_case);
 
 
   // ---------------------------------------------------------------------------
@@ -247,7 +217,7 @@ int RunGradientBenchmark() {
   //
   // Only application of the already prepared workspace is measured.
   //
-  // Workspace construction is deliberately excluded.
+  // The linear field is used as the controlled timing input.
   // ---------------------------------------------------------------------------
 
   const TimingResult gradient_timing =
@@ -261,8 +231,8 @@ int RunGradientBenchmark() {
   // Numerical reconstruction
   // ---------------------------------------------------------------------------
   //
-  // These evaluations are performed outside the timed regions. Their purpose
-  // is numerical verification rather than performance measurement.
+  // These operations are executed outside timed regions because their purpose
+  // here is numerical verification.
   // ---------------------------------------------------------------------------
 
   const Vector2Field constant_gradient =
@@ -279,14 +249,21 @@ int RunGradientBenchmark() {
   // ---------------------------------------------------------------------------
   // Numerical errors
   // ---------------------------------------------------------------------------
+  //
+  // The same generic error routine is used for every analytical case.
+  // ---------------------------------------------------------------------------
 
   const ErrorNorms constant_error =
-      ConstantGradientError(
-          constant_gradient);
+      ComputeGradientError(
+          mesh,
+          constant_gradient,
+          constant_case);
 
   const ErrorNorms linear_error =
-      LinearGradientError(
-          linear_gradient);
+      ComputeGradientError(
+          mesh,
+          linear_gradient,
+          linear_case);
 
 
   // ---------------------------------------------------------------------------
@@ -312,11 +289,11 @@ int RunGradientBenchmark() {
       << "\nNumerical error results\n";
 
   PrintErrorResult(
-      "constant field",
+      constant_case.name,
       constant_error);
 
   PrintErrorResult(
-      "linear field",
+      linear_case.name,
       linear_error);
 
 
