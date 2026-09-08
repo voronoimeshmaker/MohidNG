@@ -1,13 +1,12 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
+#include <petscsystypes.h>
 
 
 namespace mohidng {
 
-using Real = double;
-using Integer = std::int64_t;
-using Size = std::size_t;
+using Real = PetscReal;
+using Integer = PetscInt;
+using Size = PetscSizeT;
 
 }  // namespace mohidng
