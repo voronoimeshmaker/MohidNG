@@ -35,7 +35,7 @@ Mohid-NG consumes validated Voronoi mesh packages and uses them for physical mod
 
 ## Licence
 
-Mohid-NG is licensed under the Apache License, Version 2.0 (Apache-2.0). Third-party dependency policy and notices are tracked in THIRD_PARTY_NOTICES.md.
+Mohid-NG is licensed under the Mozilla Public License 2.0 (MPL-2.0). See the `LICENSE` file for details. Third-party dependency policy and notices are tracked in `THIRD_PARTY_NOTICES.md`.
 
 ## Build
 
