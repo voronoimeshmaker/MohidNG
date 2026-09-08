@@ -1,8 +1,15 @@
 # SPDX-License-Identifier: MPL-2.0
 include_guard(GLOBAL)
 
-option(MOHIDNG_BUILD_BENCHMARKS "Build scientific verification benchmarks" OFF)
+option(MOHIDNG_BUILD_BENCHMARKS "Build scientific verification benchmarks" ON)
+option(MOHIDNG_BUILD_EXAMPLES "Build Mohid-NG examples" OFF)
+option(MOHIDNG_BUILD_TESTS "Build Mohid-NG tests" OFF)
 option(MOHIDNG_BUILD_CASES "Build scientific application cases" OFF)
+
+
+option(MOHIDNG_BUILD_DOCS "Build Mohid-NG documentation" OFF)
+
+
 option(MOHIDNG_REGISTER_SCIENTIFIC_TESTS "Also register enabled benchmarks/cases with CTest" OFF)
 
 option(MOHIDNG_ENABLE_WARNINGS "Enable warnings on MohidNG targets" ON)

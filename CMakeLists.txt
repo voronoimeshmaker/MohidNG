@@ -5,9 +5,7 @@ project(MohidNG
   DESCRIPTION "Voronoi-based environmental modelling core"
   LANGUAGES CXX)
 
-option(MOHIDNG_BUILD_EXAMPLES "Build Mohid-NG examples" ON)
-option(MOHIDNG_BUILD_TESTS "Build Mohid-NG tests" ON)
-option(MOHIDNG_BUILD_DOCS "Build Mohid-NG documentation" OFF)
+
 
 include(cmake/MohidNGCompilerOptions.cmake)
 
