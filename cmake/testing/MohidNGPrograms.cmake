@@ -266,6 +266,53 @@ function(mohidng_add_program source group)
 
 
   # ----------------------------------------------------------------------------
+  # Group-common implementation sources
+  # ----------------------------------------------------------------------------
+  #
+  # Program groups may provide implementation shared by every program in that
+  # group.
+  #
+  # For example:
+  #
+  #   benchmarks/common/
+  #
+  # contains infrastructure shared by scientific benchmarks, such as timing
+  # and statistical measurement utilities.
+  #
+  # Shared sources remain outside individual program directories so that the
+  # same implementation does not need to be duplicated between programs.
+  # ----------------------------------------------------------------------------
+
+  set(
+    group_common_directory
+    "${PROJECT_SOURCE_DIR}/${group}/common"
+  )
+
+  if(EXISTS "${group_common_directory}")
+
+    file(
+      GLOB_RECURSE
+      group_common_sources
+      CONFIGURE_DEPENDS
+      "${group_common_directory}/*.cc"
+      "${group_common_directory}/*.cpp"
+    )
+
+    list(
+      SORT
+      group_common_sources
+    )
+
+    list(
+      APPEND
+      program_sources
+      ${group_common_sources}
+    )
+
+  endif()
+
+
+  # ----------------------------------------------------------------------------
   # Executable target
   # ----------------------------------------------------------------------------
 
@@ -420,6 +467,21 @@ function(mohidng_add_program source group)
       "${target}"
       PRIVATE
       "${program_include_directory}"
+    )
+
+  endif()
+
+  # Add the group-common directory itself because shared headers are stored
+  # directly beside their implementation files, for example:
+  #
+  #   benchmarks/common/BenchmarkTiming.h
+
+  if(EXISTS "${group_common_directory}")
+
+    target_include_directories(
+      "${target}"
+      PRIVATE
+      "${group_common_directory}"
     )
 
   endif()
